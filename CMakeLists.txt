@@ -16,8 +16,10 @@ set(TOOL_PREFIX "riscv64-linux-gnu")
 set(CMAKE_ASM_COMPILER "${TOOL_PREFIX}-gcc")
 set(CMAKE_C_COMPILER "${TOOL_PREFIX}-gcc")
 set(CMAKE_CXX_COMPILER "${TOOL_PREFIX}-g++")
+set(CMAKE_AR "${TOOL_PREFIX}-ar")
+set(CMAKE_RANLIB "${TOOL_PREFIX}-ranlib")
 SET(CMAKE_C_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <CMAKE_C_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET>")
-SET(CMAKE_CXX_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET>")
+SET(CMAKE_CXX_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> <LINK_LIBRARIES> -o <TARGET>")
 
 add_compile_options(
   -Wall
@@ -33,6 +35,8 @@ include_directories(${CMAKE_BINARY_DIR})
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_subdirectory(kernel)
+add_subdirectory(lib)
+add_subdirectory(driver)
 
 set(QEMU_OPTION
   -machine virt -m 128m -bios none -smp 1 -nographic
