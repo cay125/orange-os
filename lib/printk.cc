@@ -25,7 +25,8 @@ static void simple_outputchar(char **str, char c)
 
 enum flags {
 	PAD_ZERO = 1,
-	PAD_RIGHT = 2
+	PAD_RIGHT = 2,
+	PREFIX = 4
 };
 
 static int prints(char **out, const char *string, int width, int flags)
@@ -41,7 +42,7 @@ static int prints(char **out, const char *string, int width, int flags)
 			width = 0;
 		else
 			width -= len;
-		if (flags & PAD_ZERO)
+		if ((flags & PAD_ZERO) && !(flags & PAD_RIGHT))
 			padchar = '0';
 	}
 	if (!(flags & PAD_RIGHT)) {
@@ -93,7 +94,7 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 	// 1. the last postion of this buffer must be '\0'
 	// 2. the format is only decided by `base` and `letbase` here
 
-	s = print_buf + PRINT_BUF_LEN;
+	s = print_buf + PRINT_BUF_LEN - 1;
 	*s = '\0';
 	while(u){
 		t = u % base;
@@ -106,13 +107,34 @@ static int printk_write_num(char **out, long long i, int base, int sign,
 	}
 	// finish todo
 
+	bool pad_zero = width && (flags & PAD_ZERO) && !(flags & PAD_RIGHT);
 	if (neg) {
-		if (width && (flags & PAD_ZERO)) {
+		if (pad_zero) {
 			simple_outputchar(out, '-');
 			++pc;
 			--width;
 		} else {
 			*--s = '-';
+		}
+	}
+	if (flags & PREFIX) {
+		if (base == 8) {
+			if (pad_zero) {
+				simple_outputchar(out, '0');
+				++pc;
+			} else {
+			  *--s = '0';
+			}
+		} else if (base == 16) {
+			char sub_c = (letbase == 'a') ? 'x' : 'X';
+			if (pad_zero) {
+				simple_outputchar(out, '0');
+				simple_outputchar(out, sub_c);
+				pc += 2;
+			} else {
+			  *--s = sub_c;
+			  *--s = '0';
+			}
 		}
 	}
 
@@ -150,7 +172,11 @@ static int simple_vsprintf(char **out, const char *format, va_list ap)
 				goto out;
 			if (*format == '-') {
 				++format;
-				flags = PAD_RIGHT;
+				flags |= PAD_RIGHT;
+			}
+			if (*format == '#') {
+				++format;
+				flags |= PREFIX;
 			}
 			while (*format == '0') {
 				++format;
