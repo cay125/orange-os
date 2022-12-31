@@ -1,9 +1,7 @@
 #ifndef LIB_PRINTF_H_
 
-namespace kernel {
+#include <stdarg.h>
 
-void printk(const char *fmt, ...);
-
-}  // namespace kernel
+int simple_vsprintf(char **out, const char *format, va_list ap, void (*f)(char));
 
 #endif  // LIB_PRINTF_H_
