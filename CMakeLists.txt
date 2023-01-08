@@ -37,6 +37,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 add_subdirectory(kernel)
 add_subdirectory(lib)
 add_subdirectory(driver)
+add_subdirectory(arch)
 
 set(QEMU_OPTION
   -machine virt -m 128m -bios none -smp 1 -nographic
