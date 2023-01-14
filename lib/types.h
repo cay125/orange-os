@@ -11,4 +11,6 @@ using int32_t = int;
 using int16_t = short;
 using int8_t = char;
 
+using size_t = unsigned long;
+
 #endif  // LIB_TYPES_H_
