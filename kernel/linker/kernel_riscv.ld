@@ -20,8 +20,18 @@ SECTIONS
     *(.data)
   }
 
+  .init_array : {
+    PROVIDE (init_array_start = .);
+    KEEP (*(SORT(.init_array.*)))
+    KEEP (*(.init_array*))
+    PROVIDE (init_array_end = .);
+  }
+
 	.bss : {
     . = ALIGN(16);
     *(.bss*)
   }
+	PROVIDE(kernel_end = .);
+	. = ALIGN(4096);
+	PROVIDE(memory_beg = .);
 }
