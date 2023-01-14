@@ -4,8 +4,10 @@
 _entry:
     li s1, 0x10000000 # s1 := 0x1000_0000
     la sp, stack
+    li a0, 4096
+    add sp,sp, a0
     call p_msg
-    call start
+    call _Z5startv
 spin:
     j spin
 
