@@ -4,6 +4,7 @@
 
 namespace kernel {
 
+__attribute__ ((aligned (4)))
 void panic() {
   printf("!! kernel panic !!\n");
   for (;;);
