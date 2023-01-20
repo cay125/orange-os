@@ -7,3 +7,12 @@ void* memset(void* s, int v, size_t size) {
   }
   return s;
 }
+
+void* memcpy(void *dest, const void *src, size_t n) {
+  const uint8_t* s = reinterpret_cast<const uint8_t*>(src);
+  uint8_t* d = reinterpret_cast<uint8_t*>(dest);
+  for (size_t i = 0; i < n; ++i) {
+    d[i] = s[i];
+  }
+  return dest;
+}
