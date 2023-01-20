@@ -60,6 +60,9 @@ uint64_t* VirtualMemory::GetPTE(uint64_t* root_page, uint64_t va, bool need_allo
     if (!(*sub_pte & riscv::PTE::V)) {
       if (need_alloc) {
         uint64_t* page = Alloc();
+        if (!page) {
+          return nullptr;
+        }
         *sub_pte = reinterpret_cast<uint64_t>(page) >> 2;
         *sub_pte |= riscv::PTE::V;
       } else {
@@ -87,10 +90,25 @@ bool VirtualMemory::MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv
     return false;
   }
   uint64_t* pte = GetPTE(root_page, va, true);
+  if (!pte) return false;
   *pte = pa >> 2;
   *pte |= riscv::PTE::V;
   *pte |= privilege;
   return true;
+}
+
+void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va) {
+  if ((va % memory_layout::PGSIZE) != 0) {
+    va = AddrCastDown(va);
+  }
+  uint64_t* pte = GetPTE(root_page, va, false);
+  if (pte && (*pte & riscv::PTE::V)) {
+    uint64_t* sub_pte = reinterpret_cast<uint64_t*>((*pte << 2) & (0xfff'ffff'ffffL * memory_layout::PGSIZE));
+    auto* t = reinterpret_cast<MemoryChunk*>(sub_pte);
+    t->next = memory_list_;
+    memory_list_ = t;
+    *pte = 0x0;
+  }
 }
 
 bool VirtualMemory::MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege) {
@@ -99,9 +117,14 @@ bool VirtualMemory::MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_
   for (uint64_t i = va_beg; i < va_end; i += memory_layout::PGSIZE) {
     uint64_t* page = Alloc();
     if (page == nullptr) {
+      // free all memory which has been alloced
+      FreeMemory(root_page, va_beg, i);
       return false;
     }
-    MapPage(root_page, i, reinterpret_cast<uint64_t>(page), privilege);
+    if (!MapPage(root_page, i, reinterpret_cast<uint64_t>(page), privilege)) {
+      FreeMemory(root_page, va_beg, i);
+      return false;
+    }
   }
   return true;
 }
@@ -114,11 +137,22 @@ bool VirtualMemory::MapMemory(uint64_t* root_page, uint64_t va, uint64_t pa, siz
   pa = AddrCastDown(pa);
   size = size / memory_layout::PGSIZE + ((size % memory_layout::PGSIZE) > 0);
   for (size_t i = 0; i < size; ++i) {
-    MapPage(root_page, va, pa, privilege);
+    if (!MapPage(root_page, va, pa, privilege)) {
+      FreeMemory(root_page, va - i * memory_layout::PGSIZE, va);
+      return false;
+    }
     va += memory_layout::PGSIZE;
     pa += memory_layout::PGSIZE;
   }
   return true;
+}
+
+void VirtualMemory::FreeMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end) {
+  va_beg = AddrCastDown(va_beg);
+  va_end = AddrCastUp(va_end);
+  for (uint64_t i = va_beg; i < va_end; i += memory_layout::PGSIZE) {
+    FreePage(root_page, i);
+  }
 }
 
 uint64_t VirtualMemory::AddrCastUp(uint64_t addr) {
@@ -132,7 +166,7 @@ uint64_t VirtualMemory::AddrCastDown(uint64_t addr) {
 uint64_t VirtualMemory::VAToPA(uint64_t* root_page, uint64_t va) {
   uint64_t remain = va % memory_layout::PGSIZE;
   uint64_t* pte = GetPTE(root_page, va, false);
-  if (!(*pte & riscv::PTE::V)) {
+  if (!pte || (!(*pte & riscv::PTE::V))) {
     return 0;
   }
   return (((*pte) << 2) & (0xfff'ffff'ffffL * memory_layout::PGSIZE)) + remain;
