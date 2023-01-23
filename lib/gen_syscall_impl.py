@@ -20,7 +20,7 @@ if __name__ == '__main__':
     item = item.strip()
     sys_call_impl += '.global ' + item + '\n'
     sys_call_impl += item + ':\n'
-    sys_call_impl += '  li  a7, SYSCALL_' + funs[index].upper() + '\n'
+    sys_call_impl += '  li  a7, SYSCALL_' + funs[index] + '\n'
     sys_call_impl += '  ecall\n'
     sys_call_impl += '  ret\n\n'
   with open(sys.argv[3], 'w') as f:
