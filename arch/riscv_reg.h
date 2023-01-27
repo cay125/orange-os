@@ -269,10 +269,10 @@ class McauseImpl {
     }
   }
 
-  riscv::ExceptionCode get_exception() {
+  riscv::Exception get_exception() {
     uint64_t v = 0;
     asm volatile ("csrr %0, mcause" : "=r" (v));
-    return static_cast<riscv::ExceptionCode>(v);
+    return static_cast<riscv::Exception>(v);
   }
 
  private:

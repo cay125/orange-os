@@ -15,9 +15,9 @@ void ProcessTrap() {
   if (riscv::regs::mcause.is_interrupt()) {
     panic();
   }
-  riscv::ExceptionCode e_code = riscv::regs::mcause.get_exception();
+  riscv::Exception e_code = riscv::regs::mcause.get_exception();
   switch (e_code) {
-  case riscv::ExceptionCode::environment_call_from_u_mode:
+  case riscv::Exception::environment_call_from_u_mode:
     ProcessSystemCall();
     break;
   

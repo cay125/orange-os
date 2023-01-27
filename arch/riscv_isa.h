@@ -78,7 +78,7 @@ enum class PTE : uint8_t {
 
 constexpr uint64_t EXCEPTION_MASK = 1uL << 63;
 
-enum class ExceptionCode : uint8_t {
+enum class Exception : uint8_t {
   none = 16,
   instruction_address_misaligned = 0,
   instruction_access_fault = 1,
@@ -96,7 +96,7 @@ enum class ExceptionCode : uint8_t {
   store_page_fault = 15,
 };
 
-enum class InterruptCode : uint8_t {
+enum class Interrupt : uint8_t {
   none       = 0,
   s_software = 1,
   m_software = 3,
