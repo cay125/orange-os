@@ -9,6 +9,8 @@ details::a7_reg regs::a7;
 details::mtvec regs::mtvec;
 details::mepc regs::mepc;
 details::mstatus regs::mstatus;
+details::mscratch regs::mscratch;
+details::mcause regs::mcause;
 details::satp regs::satp;
 
 details::pmp_addr regs::pmp_addr;

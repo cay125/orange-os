@@ -18,6 +18,12 @@ struct a7_op {
   static void write(uint64_t v) {
     asm volatile ("mv a7, %0" : : "r" (v));
   }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("ld %0, a7" : "=r" (v));
+    return v;
+  }
 };
 
 struct mtvec_op {
@@ -28,6 +34,12 @@ struct mtvec_op {
 
   static void write(uint64_t v) {
     asm volatile ("csrw mtvec, %0" : : "r" (v));
+  }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mtvec" : "=r" (v));
+    return v;
   }
 };
 
@@ -40,6 +52,12 @@ struct mepc_op {
   static void write(uint64_t v) {
     asm volatile ("csrw mepc, %0" : : "r" (v));
   }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mepc" : "=r" (v));
+    return v;
+  }
 };
 
 struct mstatus_op {
@@ -51,6 +69,29 @@ struct mstatus_op {
   static void write(uint64_t v) {
     asm volatile ("csrw mstatus, %0" : : "r" (v));
   }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mstatus" : "=r" (v));
+    return v;
+  }
+};
+
+struct mscratch_op {
+  template <int imm>
+  static void write_imm() {
+    asm volatile ("csrwi mscratch, %0" : : "i" (imm));
+  }
+
+  static void write(uint64_t v) {
+    asm volatile ("csrw mscratch, %0" : : "r" (v));
+  }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mscratch" : "=r" (v));
+    return v;
+  }
 };
 
 struct satp_op {
@@ -61,6 +102,12 @@ struct satp_op {
 
   static void write(uint64_t v) {
     asm volatile ("csrw satp, %0" : : "r" (v));
+  }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, satp" : "=r" (v));
+    return v;
   }
 };
 
@@ -76,6 +123,10 @@ class GeneralReg {
   template <int imm>
   inline void write_imm() {
     OP::template write_imm<imm>();
+  }
+
+  inline uint64_t read() {
+    return OP::read();
   }
 
  private:
@@ -196,11 +247,47 @@ class PMPCfgImpl {
   friend class ::riscv::regs;
 };
 
+class McauseImpl {
+ public:
+  bool is_exception() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mcause" : "=r" (v));
+    if (v & riscv::EXCEPTION_MASK) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  bool is_interrupt() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mcause" : "=r" (v));
+    if (!(v & riscv::EXCEPTION_MASK)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  riscv::ExceptionCode get_exception() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mcause" : "=r" (v));
+    return static_cast<riscv::ExceptionCode>(v);
+  }
+
+ private:
+  McauseImpl() {}
+
+  friend class ::riscv::regs;
+};
+
 using a7_reg = GeneralReg<a7_op>;
 
 using mtvec = GeneralReg<mtvec_op>;
 using mepc = GeneralReg<mepc_op>;
 using mstatus = MstatusImpl;
+using mscratch = GeneralReg<mscratch_op>;
+using mcause = McauseImpl;
 
 using satp = GeneralReg<satp_op>;
 
@@ -220,6 +307,8 @@ struct regs {
   static details::mtvec mtvec;
   static details::mepc mepc;
   static details::mstatus mstatus;
+  static details::mscratch mscratch;
+  static details::mcause mcause;
 
   static details::satp satp;
 

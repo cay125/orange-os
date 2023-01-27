@@ -8,16 +8,20 @@
 namespace riscv {
 namespace isa {
 
-inline void ecall() {
+inline __attribute__((always_inline)) void ecall() {
   asm volatile ("ecall");
 }
 
-inline void mret() {
+inline __attribute__((always_inline)) void mret() {
   asm volatile ("mret");
 }
 
-inline void ret() {
+inline __attribute__((always_inline)) void ret() {
   asm volatile ("ret");
+}
+
+inline __attribute__((always_inline)) void sfence() {
+  asm volatile("sfence.vma zero, zero");
 }
 
 }  // namespace isa
@@ -70,6 +74,36 @@ enum class PTE : uint8_t {
   G    = 1 << 5,
   A    = 1 << 6,
   D    = 1 << 7,
+};
+
+constexpr uint64_t EXCEPTION_MASK = 1uL << 63;
+
+enum class ExceptionCode : uint8_t {
+  none = 16,
+  instruction_address_misaligned = 0,
+  instruction_access_fault = 1,
+  illegal_instruction = 2,
+  breakpoint = 3,
+  load_address_misaligned = 4,
+  load_access_fault = 5,
+  store_address_misaligned = 6,
+  store_access_fault = 7,
+  environment_call_from_u_mode = 8,
+  environment_call_from_s_mode = 9,
+  environment_call_from_m_mode = 11,
+  instruction_page_fault = 12,
+  load_page_fault = 13,
+  store_page_fault = 15,
+};
+
+enum class InterruptCode : uint8_t {
+  none       = 0,
+  s_software = 1,
+  m_software = 3,
+  s_timer    = 5,
+  m_timer    = 7,
+  s_external = 9,
+  m_external = 11,
 };
 
 template <typename T1, typename T2, std::enable_if_t<std::is_enum_v<T1>, bool> = true, std::enable_if_t<std::is_integral_v<T2>, bool> = true>
