@@ -1,6 +1,7 @@
 #ifndef KERNEL_SYSCALLS_SYSCALL_NUM_DEF
 #define KERNEL_SYSCALLS_SYSCALL_NUM_DEF
 
+#define SYSCALL_fork        0
 #define SYSCALL_write       1
 #define SYSCALL_read        2
 #define SYSCALL_exec        3
