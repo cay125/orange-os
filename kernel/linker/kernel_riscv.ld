@@ -8,16 +8,22 @@ SECTIONS
 	
 	.text : {
 		*(.text)
+    *(.text.*)
+    *(.context_switch)
+    . = ALIGN(4096);
+    PROVIDE (kernel_code_end = .);
 	}
 
 	.rodata : {
     . = ALIGN(16);
 		*(.rodata) 
+    *(.rodata.*)
 	}
     
 	.data : {
     . = ALIGN(16);
     *(.data)
+    *(.data.*)
   }
 
   .init_array : {
