@@ -27,6 +27,7 @@ add_compile_options(
   -nostdlib
   -ffreestanding
   -fno-common
+  -fno-rtti
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -37,7 +38,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 add_subdirectory(kernel)
 add_subdirectory(lib)
 add_subdirectory(driver)
+add_subdirectory(user)
 add_subdirectory(arch)
+add_subdirectory(tools)
 
 set(QEMU_OPTION
   -machine virt -m 128m -bios none -smp 1 -nographic
@@ -52,7 +55,7 @@ add_custom_target(
 
 add_custom_target(
   qemu-debug
-  COMMAND echo "open new terminal to start gdb"
+  COMMAND /usr/bin/echo "open new terminal to start gdb"
   COMMAND qemu-system-riscv64 ${QEMU_OPTION} -S -gdb tcp::25000
   DEPENDS kernel.elf
 )
