@@ -35,6 +35,7 @@ struct ProcessTask {
   uint64_t pid = 0;
   RegFrame* frame = nullptr;
   uint64_t* page_table = nullptr;
+  uint64_t* kernel_sp = nullptr;
   ProcessState state = ProcessState::unused;
   SavedContext saved_context;
 };

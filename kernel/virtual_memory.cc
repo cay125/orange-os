@@ -65,9 +65,8 @@ uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
     FreePage(stack_page);
     return nullptr;
   }
-  uint64_t* kernel_stack_page = Alloc();
   auto* reg_frame = process->frame;
-  reg_frame->kernel_sp = (uint64_t)kernel_stack_page + memory_layout::PGSIZE;
+  reg_frame->kernel_sp = (uint64_t)process->kernel_sp + memory_layout::PGSIZE;
   reg_frame->sp = sp_va + memory_layout::PGSIZE;
   reg_frame->scheduler_info = Schedueler::Instance()->scheduler_info();
   return root_page;

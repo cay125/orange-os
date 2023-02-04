@@ -51,7 +51,8 @@ ProcessTask* Schedueler::AllocProc() {
         VirtualMemory::Instance()->FreePage(frame_page);
         return nullptr;
       }
-      task.saved_context.sp = reinterpret_cast<uint64_t>(sp_page) + memory_layout::PGSIZE;
+      task.kernel_sp = sp_page;
+      task.saved_context.sp = reinterpret_cast<uint64_t>(task.kernel_sp) + memory_layout::PGSIZE;
       return &task;
     }
   }
