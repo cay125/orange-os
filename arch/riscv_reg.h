@@ -94,21 +94,27 @@ struct mscratch_op {
   }
 };
 
-struct satp_op {
-  template <int imm>
-  static void write_imm() {
-    asm volatile ("csrwi satp, %0" : : "i" (imm));
-  }
-
-  static void write(uint64_t v) {
-    asm volatile ("csrw satp, %0" : : "r" (v));
-  }
-
+struct mhartid_op {
   static uint64_t read() {
     uint64_t v = 0;
-    asm volatile ("csrr %0, satp" : "=r" (v));
+    asm volatile ("csrr %0, mhartid" : "=r" (v));
     return v;
   }
+};
+
+template <class OP>
+class ReadOnlyReg {
+ public:
+  ReadOnlyReg(ReadOnlyReg&) = delete;
+
+  inline uint64_t read() {
+    return OP::read();
+  }
+
+ private:
+  ReadOnlyReg() {}
+
+  friend class ::riscv::regs;
 };
 
 template <class OP>
@@ -162,6 +168,45 @@ class MstatusImpl{
  private:
   MstatusImpl() {}
 
+  friend class ::riscv::regs;
+};
+
+class MieImpl {
+ public:
+  void set_bit(MIE mie) {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mie" : "=r" (v));
+    v |= mie;
+    asm volatile ("csrw mie, %0" : : "r" (v));
+  }
+
+  void clear_bit(MIE mie) {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mie" : "=r" (v));
+    v &= ~mie;
+    asm volatile ("csrw mie, %0" : : "r" (v));
+  }
+
+ private:
+  MieImpl() {}
+
+  friend class ::riscv::regs;
+};
+
+class SatpImpl {
+ public:
+  inline __attribute__((always_inline)) void write(riscv::virtual_addresing mode, uint64_t* root_page) {
+    asm volatile ("csrw satp, %0" : : "r" (mode | (reinterpret_cast<uint64_t>(root_page) >> 12)));
+  }
+
+  uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, satp" : "=r" (v));
+    return v;
+  }
+
+ private:
+  SatpImpl() {}
   friend class ::riscv::regs;
 };
 
@@ -275,6 +320,12 @@ class McauseImpl {
     return static_cast<riscv::Exception>(v);
   }
 
+  riscv::Interrupt get_interrupt() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mcause" : "=r" (v));
+    return static_cast<riscv::Interrupt>(v);
+  }
+
  private:
   McauseImpl() {}
 
@@ -288,8 +339,10 @@ using mepc = GeneralReg<mepc_op>;
 using mstatus = MstatusImpl;
 using mscratch = GeneralReg<mscratch_op>;
 using mcause = McauseImpl;
+using mhartid = ReadOnlyReg<mhartid_op>;
+using mie = MieImpl;
 
-using satp = GeneralReg<satp_op>;
+using satp = SatpImpl;
 
 using pmp_addr = PMPAddrImpl;
 using pmp_cfg = PMPCfgImpl;
@@ -309,6 +362,8 @@ struct regs {
   static details::mstatus mstatus;
   static details::mscratch mscratch;
   static details::mcause mcause;
+  static details::mhartid mhartid;
+  static details::mie mie;
 
   static details::satp satp;
 

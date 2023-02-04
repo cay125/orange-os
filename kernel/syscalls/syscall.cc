@@ -1,7 +1,7 @@
 #include "kernel/syscalls/syscall.h"
 
 #include "arch/riscv_reg.h"
-#include "kernel/regs_frame.h"
+#include "kernel/regs_frame.hpp"
 #include "kernel/syscalls/manager.h"
 
 namespace kernel {

@@ -5,6 +5,8 @@
 
 namespace kernel {
 
+struct SchedulerInfo;
+
 struct RegFrame {
   uint64_t ra;
   uint64_t sp;
@@ -37,9 +39,13 @@ struct RegFrame {
   uint64_t t4;
   uint64_t t5;
   uint64_t t6;
-  uint64_t trap_function_addr;
+  uint64_t mepc;
   uint64_t kernel_sp;
-  uint64_t kernel_fp;
+  uint64_t* root_table;
+  const SchedulerInfo* scheduler_info;
+  uint64_t reserved_space[128 - 35];
+
+  uint64_t temporary_space[128];
 };
 
 }  // namespace kernel

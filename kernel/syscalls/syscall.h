@@ -1,8 +1,6 @@
 #ifndef KERNEL_SYSCALL_H_
 #define KERNEL_SYSCALL_H_
 
-#include "lib/types.h"
-
 namespace kernel {
 
 void ProcessSystemCall();

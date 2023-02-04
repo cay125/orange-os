@@ -28,13 +28,11 @@ inline __attribute__((always_inline)) void sfence() {
 
 constexpr uint8_t MAX_PMP_REG = 16;
 
-namespace virtual_addresing {
-
-constexpr uint64_t Bare = 0;
-constexpr uint64_t Sv39 = 8L << 60;
-constexpr uint64_t Sv48 = 9L << 60;
-
-}  // namespace virtual_addresing
+enum class virtual_addresing : uint64_t {
+  Bare = 0,
+  Sv39 = 8uL << 60,
+  Sv48 = 9uL << 60,
+};
 
 constexpr uint64_t MPP_MASK = ~(3uL << 11);
 
@@ -52,6 +50,18 @@ enum class StatusBit : uint64_t {
   mie  = 1uL << 3,
   sie  = 1uL << 1,
   usie = 1uL << 0,
+};
+
+enum class MIE : uint64_t {
+  USIE = 1uL << 0,
+  SSIE = 1uL << 1,
+  MSIE = 1uL << 3,
+  UTIE = 1uL << 4,
+  STIE = 1uL << 5,
+  MTIE = 1uL << 7,
+  UEIE = 1uL << 8,
+  SEIE = 1uL << 9,
+  MEIE = 1uL << 11,
 };
 
 enum class PMPBit : uint8_t {
@@ -127,6 +137,11 @@ inline T operator | (T t1, T t2) {
   using V = std::underlying_type_t<T>;
   V v = static_cast<V>(t1) | static_cast<V>(t2);
   return static_cast<T>(v);
+}
+
+template <typename T1, typename T2, std::enable_if_t<std::is_enum_v<T1>, bool> = true, std::enable_if_t<std::is_integral_v<T2>, bool> = true>
+inline std::underlying_type_t<T1> operator | (T1 t1, T2 t2) {
+  return static_cast<std::underlying_type_t<T1>>(t1) | t2;
 }
 
 template <typename T1, typename T2, std::enable_if_t<std::is_integral_v<T1>, bool> = true, std::enable_if_t<std::is_enum_v<T2>, bool> = true>

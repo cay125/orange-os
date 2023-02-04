@@ -17,6 +17,15 @@ void* memcpy(void *dest, const void *src, size_t n) {
   return dest;
 }
 
+void * memmove(void *dest, const void *src, size_t size) {
+  const uint8_t* s = reinterpret_cast<const uint8_t*>(src);
+  uint8_t* d = reinterpret_cast<uint8_t*>(dest);
+  for (int i = size - 1; i >= 0; --i) {
+    d[i] = s[i];
+  }
+  return dest;
+}
+
 size_t strlen(const char* s) {
   const char* p = s;
   while (*p) {

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "Total file size: " << s.length() << "\n";
 
-  const char* beg = "unsigned char initcode[] = {";
+  const char* beg = "char initcode[] = {";
   std::copy(beg, beg + strlen(beg), buffer);
   char* p = buffer + strlen(beg);
   for (int i =0; i < s.length(); i++) {

@@ -6,4 +6,4 @@ exception_table:
 .org  exception_table + 0*4;
   j preserve_user_context;
 .org  exception_table + 7*4;
-  j preserve_user_context;
+  j timer_handler;

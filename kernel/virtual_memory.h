@@ -2,6 +2,7 @@
 #define VIRTUAL_MEMORY_H_
 
 #include "arch/riscv_isa.h"
+#include "kernel/process.h"
 #include "lib/types.h"
 
 namespace kernel {
@@ -18,8 +19,10 @@ class VirtualMemory {
   bool Init();
   bool HasInit();
   uint64_t* Alloc();
+  uint64_t* AllocProcessPageTable(ProcessTask* process);
   bool MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv::PTE privilege);
   void FreePage(uint64_t* root_page, uint64_t va);
+  void FreePage(uint64_t* pa);
   bool MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege);
   bool MapMemory(uint64_t* root_page, uint64_t va, uint64_t pa, size_t size, riscv::PTE privilege);
   void FreeMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end);

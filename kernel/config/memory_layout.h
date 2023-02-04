@@ -6,6 +6,9 @@
 #define MEMORY_MAPPED_IO_W_Byte(reg, value) (*(volatile uint8_t*)(reg) = value)
 #define MEMORY_MAPPED_IO_R_Byte(reg) (*(volatile uint8_t*)(reg))
 
+#define MEMORY_MAPPED_IO_W_DWORD(reg, value) (*(volatile uint64_t*)(reg) = value)
+#define MEMORY_MAPPED_IO_R_DWORD(reg) (*(volatile uint64_t*)(reg))
+
 namespace memory_layout {
 
 constexpr uint64_t UART0 = 0x10000000L;

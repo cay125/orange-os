@@ -1,12 +1,15 @@
 #include "kernel/virtual_memory.h"
 
 #include "kernel/config/memory_layout.h"
-#include "kernel/printf.h"
+#include "kernel/regs_frame.hpp"
+#include "kernel/scheduler.h"
 #include "lib/string.h"
 
 extern char memory_beg[];
 
 namespace kernel {
+
+extern SchedulerInfo scheduler_info;
 
 VirtualMemory VirtualMemory::vm_;
 MemoryChunk* VirtualMemory::memory_list_ = nullptr;
@@ -46,6 +49,28 @@ uint64_t* VirtualMemory::Alloc() {
   memory_list_ = memory_list_->next;
   memset(t, 0, sizeof(memory_layout::PGSIZE));
   return reinterpret_cast<uint64_t*>(t);
+}
+
+uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
+  uint64_t* root_page = Alloc();
+  if (!root_page) return nullptr;
+  uint64_t* stack_page = Alloc();
+  if (!stack_page) {
+    FreePage(root_page);
+    return nullptr;
+  }
+  uint64_t sp_va = AddrCastDown(memory_layout::MAX_SUPPORT_VA) - memory_layout::PGSIZE;
+  if (!MapPage(root_page, sp_va, (uint64_t)stack_page, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U)) {
+    FreePage(root_page);
+    FreePage(stack_page);
+    return nullptr;
+  }
+  uint64_t* kernel_stack_page = Alloc();
+  auto* reg_frame = process->frame;
+  reg_frame->kernel_sp = (uint64_t)kernel_stack_page + memory_layout::PGSIZE;
+  reg_frame->sp = sp_va + memory_layout::PGSIZE;
+  reg_frame->scheduler_info = Schedueler::Instance()->scheduler_info();
+  return root_page;
 }
 
 uint64_t* VirtualMemory::GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc) {
@@ -109,6 +134,13 @@ void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va) {
     memory_list_ = t;
     *pte = 0x0;
   }
+}
+
+void VirtualMemory::FreePage(uint64_t* pa) {
+  if (!pa) return;
+  auto* t = reinterpret_cast<MemoryChunk*>(pa);
+  t->next = memory_list_;
+  memory_list_ = t;
 }
 
 bool VirtualMemory::MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege) {
