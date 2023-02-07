@@ -1,5 +1,7 @@
 #include "lib/string.h"
 
+extern "C" {
+
 void* memset(void* s, int v, size_t size) {
   uint8_t* c = reinterpret_cast<uint8_t*>(s);
   for (size_t i = 0; i < size; ++i) {
@@ -32,4 +34,6 @@ size_t strlen(const char* s) {
     p++;
   }
   return p - s;
+}
+
 }

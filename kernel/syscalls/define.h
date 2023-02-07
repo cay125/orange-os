@@ -9,6 +9,7 @@ struct ProcessTask;
 
 void TrapRet(ProcessTask* process, riscv::Exception exception);
 void ExcuteInitProcess(char* code);
+void ExecuteRet();
 
 namespace syscall {
 

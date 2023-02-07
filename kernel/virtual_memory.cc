@@ -52,19 +52,17 @@ uint64_t* VirtualMemory::Alloc() {
 }
 
 uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
-  uint64_t* root_page = Alloc();
-  if (!root_page) return nullptr;
+  uint64_t* root_page = process->page_table;
   uint64_t* stack_page = Alloc();
   if (!stack_page) {
-    FreePage(root_page);
     return nullptr;
   }
   uint64_t sp_va = AddrCastDown(memory_layout::MAX_SUPPORT_VA) - memory_layout::PGSIZE;
   if (!MapPage(root_page, sp_va, (uint64_t)stack_page, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U)) {
-    FreePage(root_page);
     FreePage(stack_page);
     return nullptr;
   }
+  process->user_sp = stack_page;
   auto* reg_frame = process->frame;
   reg_frame->kernel_sp = (uint64_t)process->kernel_sp + memory_layout::PGSIZE;
   reg_frame->sp = sp_va + memory_layout::PGSIZE;
@@ -142,6 +140,12 @@ void VirtualMemory::FreePage(uint64_t* pa) {
   memory_list_ = t;
 }
 
+void VirtualMemory::FreePage(std::initializer_list<uint64_t*> pa_list) {
+  for (auto pa : pa_list) {
+    FreePage(pa);
+  }
+}
+
 bool VirtualMemory::MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege) {
   va_beg = AddrCastDown(va_beg);
   va_end = AddrCastUp(va_end);
@@ -194,11 +198,14 @@ uint64_t VirtualMemory::AddrCastDown(uint64_t addr) {
   return addr & (~(memory_layout::PGSIZE - 1));
 }
 
-uint64_t VirtualMemory::VAToPA(uint64_t* root_page, uint64_t va) {
+uint64_t VirtualMemory::VAToPA(uint64_t* root_page, uint64_t va, riscv::PTE* output_privi) {
   uint64_t remain = va % memory_layout::PGSIZE;
   uint64_t* pte = GetPTE(root_page, va, false);
   if (!pte || (!(*pte & riscv::PTE::V))) {
     return 0;
+  }
+  if (output_privi) {
+    *output_privi = static_cast<riscv::PTE>(*pte & riscv::PTE_MASK);
   }
   return (((*pte) << 2) & (0xfff'ffff'ffffL * memory_layout::PGSIZE)) + remain;
 }

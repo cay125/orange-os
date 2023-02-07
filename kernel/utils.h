@@ -7,6 +7,11 @@ namespace kernel {
 
 void panic();
 
+template <typename T, int N>
+int Len(T (&arr)[N]) {
+  return N;
+}
+
 inline __attribute__((always_inline)) void global_interrunpt_on() {
   riscv::regs::mstatus.set_bit(riscv::StatusBit::mie);
 }

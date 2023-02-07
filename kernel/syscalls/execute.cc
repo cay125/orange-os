@@ -93,9 +93,16 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
       printf("exec: Load Segment failed\n");
       return -1;
     }
+    if (process->used_address_size >= process->used_address.size()) {
+      printf("exec: too many load-segment\n");
+      return -1;
+    }
+    auto& region = process->used_address[process->used_address_size];
+    region.first = ph->p_vaddr;
+    region.second = ph->p_vaddr + ph->p_memsz;
+    process->used_address_size += 1;
   }
   process->frame->mepc = elf64_header->e_entry;
-  process->frame->root_table = root_page;
 
   return 0;
 }
@@ -103,7 +110,7 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
 void TrapRet(ProcessTask* process, riscv::Exception exception) {
   RegFrame* frame = process->frame;
   if (exception != riscv::Exception::environment_call_from_u_mode) {
-    riscv::regs::satp.write(riscv::virtual_addresing::Sv39, frame->root_table);
+    riscv::regs::satp.write(riscv::virtual_addresing::Sv39, process->page_table);
     riscv::isa::sfence();
   }
   riscv::regs::mepc.write(frame->mepc);

@@ -51,6 +51,12 @@ ProcessTask* Schedueler::AllocProc() {
         VirtualMemory::Instance()->FreePage(frame_page);
         return nullptr;
       }
+      auto root_page_table = VirtualMemory::Instance()->Alloc();
+      if (!root_page_table) {
+        VirtualMemory::Instance()->FreePage({frame_page, sp_page});
+        return nullptr;
+      }
+      task.page_table = root_page_table;
       task.kernel_sp = sp_page;
       task.saved_context.sp = reinterpret_cast<uint64_t>(task.kernel_sp) + memory_layout::PGSIZE;
       return &task;

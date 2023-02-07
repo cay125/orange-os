@@ -8,7 +8,9 @@ namespace syscall {
 namespace comm {
 
 uint64_t GetRawArg(int order);
+void SetRawArg(int order, uint64_t value);
 int GetIntArg(int order);
+void SetIntArg(int order, int value);
 
 template <typename T>
 T* GetAddrArg(int order) {

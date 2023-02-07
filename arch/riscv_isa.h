@@ -74,6 +74,8 @@ enum class PMPBit : uint8_t {
   NAPOT = 3uL << 3,
 };
 
+constexpr uint8_t PTE_MASK = 0x1e;
+
 enum class PTE : uint8_t {
   None = 0,
   V    = 1 << 0,

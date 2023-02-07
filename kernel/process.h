@@ -1,6 +1,9 @@
 #ifndef KERNEL_PROCESS_H
 #define KERNEL_PROCESS_H
 
+#include <array>
+#include <utility>
+
 #include "kernel/regs_frame.hpp"
 #include "lib/types.h"
 
@@ -30,14 +33,21 @@ enum class ProcessState : uint8_t {
   running,
 };
 
+// va_beg, va_end
+using MemoryRegion = std::pair<uint64_t, uint64_t>;
+
 struct ProcessTask {
   const char* name = nullptr;
   uint64_t pid = 0;
   RegFrame* frame = nullptr;
   uint64_t* page_table = nullptr;
+  size_t used_address_size = 0;
+  std::array<MemoryRegion, 16> used_address;
   uint64_t* kernel_sp = nullptr;
+  uint64_t* user_sp = nullptr;
   ProcessState state = ProcessState::unused;
   SavedContext saved_context;
+  ProcessTask* parent_process = nullptr;
 };
 
 }  // namespace kernel

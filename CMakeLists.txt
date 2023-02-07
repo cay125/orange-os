@@ -28,6 +28,7 @@ add_compile_options(
   -ffreestanding
   -fno-common
   -fno-rtti
+  -std=c++20
 )
 
 include_directories(${CMAKE_SOURCE_DIR})

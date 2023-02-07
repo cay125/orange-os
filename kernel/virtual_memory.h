@@ -1,6 +1,8 @@
 #ifndef VIRTUAL_MEMORY_H_
 #define VIRTUAL_MEMORY_H_
 
+#include <initializer_list>
+
 #include "arch/riscv_isa.h"
 #include "kernel/process.h"
 #include "lib/types.h"
@@ -23,10 +25,11 @@ class VirtualMemory {
   bool MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv::PTE privilege);
   void FreePage(uint64_t* root_page, uint64_t va);
   void FreePage(uint64_t* pa);
+  void FreePage(std::initializer_list<uint64_t*> pa_list);
   bool MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege);
   bool MapMemory(uint64_t* root_page, uint64_t va, uint64_t pa, size_t size, riscv::PTE privilege);
   void FreeMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end);
-  uint64_t VAToPA(uint64_t* root_page, uint64_t va);
+  uint64_t VAToPA(uint64_t* root_page, uint64_t va, riscv::PTE* output_privi = nullptr);
   static uint64_t AddrCastUp(uint64_t addr);
   static uint64_t AddrCastDown(uint64_t addr);
  
