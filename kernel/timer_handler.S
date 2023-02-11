@@ -2,8 +2,8 @@
 
 #include "kernel/reg_frame_offset.h"
 
-.global timer_handler
-timer_handler:
+.global user_timer_handler
+user_timer_handler:
   csrrw a0, mscratch, a0
 
   # preserve a1,a2,a3,a4
