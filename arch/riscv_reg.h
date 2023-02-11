@@ -26,23 +26,6 @@ struct a7_op {
   }
 };
 
-struct mtvec_op {
-  template <int imm>
-  static void write_imm() {
-    asm volatile ("csrwi mtvec, %0" : : "i" (imm));
-  }
-
-  static void write(uint64_t v) {
-    asm volatile ("csrw mtvec, %0" : : "r" (v));
-  }
-
-  static uint64_t read() {
-    uint64_t v = 0;
-    asm volatile ("csrr %0, mtvec" : "=r" (v));
-    return v;
-  }
-};
-
 struct mepc_op {
   template <int imm>
   static void write_imm() {
@@ -199,6 +182,29 @@ class MieImpl {
   friend class ::riscv::regs;
 };
 
+class MtvecImpl {
+ public:
+  void write_vec(function_t fun, bool vectored) {
+    uint64_t v = reinterpret_cast<uint64_t>(fun) + vectored;
+    asm volatile ("csrw mtvec, %0" : : "r" (v));
+  }
+
+  bool write_vec_verify(function_t fun, bool vectored) {
+    uint64_t v = reinterpret_cast<uint64_t>(fun) + vectored;
+    asm volatile ("csrw mtvec, %0" : : "r" (v));
+    uint64_t ret = 0;
+    asm volatile ("csrr %0, mtvec" : "=r" (ret));
+    if (ret != (v)) {
+      return false;
+    }
+    return true;
+  }
+
+ private:
+  MtvecImpl() {}
+  friend class ::riscv::regs;
+};
+
 class SatpImpl {
  public:
   inline __attribute__((always_inline)) void write(riscv::virtual_addresing mode, uint64_t* root_page) {
@@ -340,7 +346,7 @@ class McauseImpl {
 
 using a7_reg = GeneralReg<a7_op>;
 
-using mtvec = GeneralReg<mtvec_op>;
+using mtvec = MtvecImpl;
 using mepc = GeneralReg<mepc_op>;
 using mstatus = MstatusImpl;
 using mscratch = GeneralReg<mscratch_op>;

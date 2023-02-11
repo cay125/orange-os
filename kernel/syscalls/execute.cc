@@ -116,7 +116,7 @@ void TrapRet(ProcessTask* process, riscv::Exception exception) {
     riscv::isa::sfence();
   }
   riscv::regs::mepc.write(frame->mepc);
-  riscv::regs::mtvec.write(reinterpret_cast<uint64_t>(user_exception_table) + 1);
+  riscv::regs::mtvec.write_vec(user_exception_table, true);
   riscv::regs::mstatus.set_mpp(riscv::MPP::user_mode);
   riscv::regs::mstatus.clear_bit(riscv::StatusBit::mpie);
   restore_user_context(frame);
