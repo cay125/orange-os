@@ -3,7 +3,7 @@
 
 namespace kernel {
 
-void ProcessTrap();
+void ProcessUserTrap();
 
 }  // kernel
 

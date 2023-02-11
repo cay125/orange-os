@@ -150,6 +150,12 @@ class MstatusImpl{
     v |= mpp;
     asm volatile ("csrw mstatus, %0" : : "r" (v));
   }
+  MPP read_mpp() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mstatus" : "=r" (v));
+    v &= ~MPP_MASK;
+    return static_cast<MPP>(v);
+  }
 
   void set_bit(StatusBit bit) {
     uint64_t v = 0;
@@ -317,13 +323,13 @@ class McauseImpl {
   riscv::Exception get_exception() {
     uint64_t v = 0;
     asm volatile ("csrr %0, mcause" : "=r" (v));
-    return static_cast<riscv::Exception>(v);
+    return static_cast<riscv::Exception>(v & ((1 << (8 * sizeof(riscv::Exception))) - 1));
   }
 
   riscv::Interrupt get_interrupt() {
     uint64_t v = 0;
     asm volatile ("csrr %0, mcause" : "=r" (v));
-    return static_cast<riscv::Interrupt>(v);
+    return static_cast<riscv::Interrupt>(v & ((1 << (8 * sizeof(riscv::Interrupt))) - 1));
   }
 
  private:

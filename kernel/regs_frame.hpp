@@ -1,6 +1,7 @@
 #ifndef KERNEL_REGS_FRSME_H
 #define KERNEL_REGS_FRSME_H
 
+#include "arch/riscv_isa.h"
 #include "lib/types.h"
 
 namespace kernel {
@@ -40,11 +41,21 @@ struct RegFrame {
   uint64_t t5;
   uint64_t t6;
   uint64_t mepc;
+  uint64_t mcause;
   uint64_t kernel_sp;
   const SchedulerInfo* scheduler_info;
-  uint64_t reserved_space[128 - 34];
+  uint64_t reserved_space[128 - 35];
 
   uint64_t temporary_space[128];
+
+  riscv::Interrupt interrunpt() {
+    return static_cast<riscv::Interrupt>(mcause & ((1 << (8 * sizeof(riscv::Interrupt))) - 1));
+  }
+
+  riscv::Exception exception() {
+    return static_cast<riscv::Exception>(mcause & ((1 << (8 * sizeof(riscv::Interrupt))) - 1));
+  }
+
 };
 
 }  // namespace kernel

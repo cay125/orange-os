@@ -1,4 +1,4 @@
-.section .context_switch
+.section .text.context_switch
 
 #include "kernel/reg_frame_offset.h"
 
@@ -50,13 +50,18 @@ preserve_user_context:
   csrr a1, mepc
   sd a1, MEPC_OFFSET(a0)
 
+  # to preserve mcause
+  csrr a1, mcause
+  sd a1, MCAUSE_OFFSET(a0)
+
   csrrw a0, mscratch, a0
 
-  la a0,  _ZN6kernel5panicEv
+  la a0,  kernel_exception_table
+  addi a0, a0, 1
   csrw mtvec, a0
 
-  # jump to ProcessTrap()
-  j _ZN6kernel11ProcessTrapEv
+  # jump to ProcessUserTrap()
+  j _ZN6kernel15ProcessUserTrapEv
 
 .global restore_user_context
 restore_user_context:

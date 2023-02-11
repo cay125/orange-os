@@ -68,7 +68,7 @@ int sys_write() {
   int fd = comm::GetIntArg(0);
   auto str = comm::GetAddrArg<char>(1);
   int size = comm::GetIntArg(2);
-  auto root_pate = reinterpret_cast<uint64_t*>((riscv::regs::satp.read() & 0xfff'ffff'ffffL) * memory_layout::PGSIZE);
+  auto root_pate = Schedueler::Instance()->ThisProcess()->page_table;
   auto str_pa = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_pate, (uint64_t)str));
   if (fd == 1) {
     for (int i = 0; i < size; ++i) 

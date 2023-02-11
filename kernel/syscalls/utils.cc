@@ -2,6 +2,7 @@
 
 #include "arch/riscv_reg.h"
 #include "kernel/regs_frame.hpp"
+#include "kernel/scheduler.h"
 #include "kernel/utils.h"
 
 namespace kernel {
@@ -12,7 +13,7 @@ uint64_t GetRawArg(int order) {
   if (order > 6 || order < 0) {
     panic();
   }
-  auto frame = reinterpret_cast<RegFrame*>(riscv::regs::mscratch.read());
+  auto frame = Schedueler::Instance()->ThisProcess()->frame;
   switch (order) {
   case 0:
     return frame->a0;
@@ -38,7 +39,7 @@ void SetRawArg(int order, uint64_t value) {
   if (order > 6 || order < 0) {
     panic();
   }
-  auto frame = reinterpret_cast<RegFrame*>(riscv::regs::mscratch.read());
+  auto frame = Schedueler::Instance()->ThisProcess()->frame;
   switch (order) {
   case 0:
     frame->a0 = value;

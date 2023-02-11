@@ -9,7 +9,6 @@ SECTIONS
 	.text : {
 		*(.text)
     *(.text.*)
-    *(.context_switch)
     . = ALIGN(4096);
     PROVIDE (kernel_code_end = .);
 	}

@@ -34,12 +34,13 @@ enum class virtual_addresing : uint64_t {
   Sv48 = 9uL << 60,
 };
 
-constexpr uint64_t MPP_MASK = ~(3uL << 11);
+constexpr uint64_t MPP_OFFSET = 11;
+constexpr uint64_t MPP_MASK = ~(3uL << MPP_OFFSET);
 
 enum class MPP : uint64_t {
   user_mode     = 0,
-  supvisor_mode = 1uL << 11,
-  mochine_mode  = 3uL << 11,
+  supvisor_mode = 1uL << MPP_OFFSET,
+  machine_mode  = 3uL << MPP_OFFSET,
 };
 
 enum class StatusBit : uint64_t {

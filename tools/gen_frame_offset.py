@@ -20,7 +20,8 @@ result = []
 
 def walk(node, flag):
   if flag:
-    result.append(macro_template.format(node.spelling.upper() + '_OFFSET', node.spelling))
+    if node.kind == clang.cindex.CursorKind.FIELD_DECL:
+      result.append(macro_template.format(node.spelling.upper() + '_OFFSET', node.spelling))
     return
   if node.kind == clang.cindex.CursorKind.STRUCT_DECL and node.spelling == 'RegFrame':
     flag = True

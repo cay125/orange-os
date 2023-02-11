@@ -8,6 +8,7 @@
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/elf_def.h"
+#include "kernel/utils.h"
 #include "kernel/virtual_memory.h"
 #include "lib/types.h"
 #include "lib/string.h"
@@ -108,6 +109,7 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
 }
 
 void TrapRet(ProcessTask* process, riscv::Exception exception) {
+  global_interrunpt_off();
   RegFrame* frame = process->frame;
   if (exception != riscv::Exception::environment_call_from_u_mode) {
     riscv::regs::satp.write(riscv::virtual_addresing::Sv39, process->page_table);
@@ -115,6 +117,8 @@ void TrapRet(ProcessTask* process, riscv::Exception exception) {
   }
   riscv::regs::mepc.write(frame->mepc);
   riscv::regs::mtvec.write(reinterpret_cast<uint64_t>(exception_table) + 1);
+  riscv::regs::mstatus.set_mpp(riscv::MPP::user_mode);
+  riscv::regs::mstatus.clear_bit(riscv::StatusBit::mpie);
   restore_user_context(frame);
 }
 
