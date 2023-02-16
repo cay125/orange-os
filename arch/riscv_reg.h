@@ -154,6 +154,13 @@ class MstatusImpl{
     asm volatile ("csrw mstatus, %0" : : "r" (v));
   }
 
+  bool read_bit(StatusBit bit) {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mstatus" : "=r" (v));
+    v &= bit;
+    return v > 0;
+  }
+
  private:
   MstatusImpl() {}
 

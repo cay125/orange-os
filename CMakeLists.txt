@@ -28,6 +28,7 @@ add_compile_options(
   -ffreestanding
   -fno-common
   -fno-rtti
+  -fno-exceptions
   -std=c++20
 )
 
