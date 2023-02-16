@@ -6,7 +6,6 @@
 
 namespace riscv {
 
-struct regs;
 namespace details {
 
 struct a7_op {
@@ -21,7 +20,24 @@ struct a7_op {
 
   static uint64_t read() {
     uint64_t v = 0;
-    asm volatile ("ld %0, a7" : "=r" (v));
+    asm volatile ("sd a7, %0" : "=m" (v));
+    return v;
+  }
+};
+
+struct tp_op {
+  template <int imm>
+  static void write_imm() {
+    asm volatile ("li tp, %0" : : "i" (imm));
+  }
+
+  static void write(uint64_t v) {
+    asm volatile ("mv tp, %0" : : "r" (v));
+  }
+
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("sd tp, %0" : "=m" (v));
     return v;
   }
 };
@@ -88,23 +104,16 @@ struct mhartid_op {
 template <class OP>
 class ReadOnlyReg {
  public:
-  ReadOnlyReg(ReadOnlyReg&) = delete;
-
   inline uint64_t read() {
     return OP::read();
   }
 
  private:
-  ReadOnlyReg() {}
-
-  friend class ::riscv::regs;
 };
 
 template <class OP>
 class GeneralReg {
  public:
-  GeneralReg(GeneralReg&) = delete;
-
   inline void write(uint64_t v) {
     OP::write(v);
   }
@@ -119,9 +128,6 @@ class GeneralReg {
   }
 
  private:
-  GeneralReg() {}
-
-  friend class ::riscv::regs;
 };
 
 class MstatusImpl{
@@ -162,9 +168,6 @@ class MstatusImpl{
   }
 
  private:
-  MstatusImpl() {}
-
-  friend class ::riscv::regs;
 };
 
 class MieImpl {
@@ -184,9 +187,6 @@ class MieImpl {
   }
 
  private:
-  MieImpl() {}
-
-  friend class ::riscv::regs;
 };
 
 class MtvecImpl {
@@ -208,8 +208,6 @@ class MtvecImpl {
   }
 
  private:
-  MtvecImpl() {}
-  friend class ::riscv::regs;
 };
 
 class SatpImpl {
@@ -225,8 +223,6 @@ class SatpImpl {
   }
 
  private:
-  SatpImpl() {}
-  friend class ::riscv::regs;
 };
 
 class PMPAddrImpl {
@@ -287,9 +283,6 @@ class PMPAddrImpl {
     }
   }
  private:
-  PMPAddrImpl() {}
-
-  friend class ::riscv::regs;
 };
 
 class PMPCfgImpl {
@@ -306,9 +299,6 @@ class PMPCfgImpl {
   }
 
  private:
-  PMPCfgImpl() {}
-
-  friend class ::riscv::regs;
 };
 
 class McauseImpl {
@@ -346,12 +336,10 @@ class McauseImpl {
   }
 
  private:
-  McauseImpl() {}
-
-  friend class ::riscv::regs;
 };
 
 using a7_reg = GeneralReg<a7_op>;
+using tp_reg = GeneralReg<tp_op>;
 
 using mtvec = MtvecImpl;
 using mepc = GeneralReg<mepc_op>;
@@ -368,27 +356,26 @@ using pmp_cfg = PMPCfgImpl;
 
 }  // namespace details
 
-struct regs {
-  regs() = delete;
-  regs(const regs&) = delete;
+namespace regs {
 
   // registers
-  static details::a7_reg a7;
+  inline details::a7_reg a7;
+  inline details::tp_reg tp;
 
   // CSRs
-  static details::mtvec mtvec;
-  static details::mepc mepc;
-  static details::mstatus mstatus;
-  static details::mscratch mscratch;
-  static details::mcause mcause;
-  static details::mhartid mhartid;
-  static details::mie mie;
+  inline details::mtvec mtvec;
+  inline details::mepc mepc;
+  inline details::mstatus mstatus;
+  inline details::mscratch mscratch;
+  inline details::mcause mcause;
+  inline details::mhartid mhartid;
+  inline details::mie mie;
 
-  static details::satp satp;
+  inline details::satp satp;
 
-  static details::pmp_addr pmp_addr;
-  static details::pmp_cfg pmp_cfg;
-};
+  inline details::pmp_addr pmp_addr;
+  inline details::pmp_cfg pmp_cfg;
+}
 
 }  // namespace riscv
 

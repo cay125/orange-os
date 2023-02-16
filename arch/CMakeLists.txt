@@ -1,3 +1,3 @@
 file(GLOB SRCS *.S *.cc *.h *.hpp)
 
-add_library(arch STATIC ${SRCS})
+target_sources(kernel.elf PRIVATE ${SRCS})
