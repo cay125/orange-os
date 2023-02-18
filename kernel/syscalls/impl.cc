@@ -77,5 +77,18 @@ int sys_write() {
   return 0;
 }
 
+int sys_sleep() {
+  uint64_t current_tick = Schedueler::Instance()->SystemTick();
+  auto sleep_time = comm::GetIntegralArg<uint64_t>(0);
+  while ((Schedueler::Instance()->SystemTick() - current_tick) < sleep_time) {
+    Schedueler::Instance()->Sleep();
+  }
+  if ((Schedueler::Instance()->SystemTick() - current_tick) >= sleep_time) {
+    return 0;
+  } else {
+    return sleep_time - (Schedueler::Instance()->SystemTick() - current_tick);
+  }
+}
+
 }  // namespace syscall
 }  // namespace kernel

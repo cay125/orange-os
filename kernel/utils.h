@@ -12,6 +12,10 @@ int Len(T (&arr)[N]) {
   return N;
 }
 
+inline __attribute__((always_inline)) uint64_t cpu_id() {
+  return riscv::regs::tp.read();
+}
+
 inline __attribute__((always_inline)) void global_interrunpt_on() {
   riscv::regs::mstatus.set_bit(riscv::StatusBit::mie);
 }

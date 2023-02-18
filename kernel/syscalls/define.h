@@ -16,6 +16,7 @@ namespace syscall {
 int sys_fork();
 int sys_write();
 int sys_exec();
+int sys_sleep();
 
 }  // namespace syscall
 }  // namespace kernel

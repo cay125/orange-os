@@ -4,6 +4,7 @@
 #include <array>
 #include <utility>
 
+#include "kernel/lock/spin_lock.h"
 #include "kernel/regs_frame.hpp"
 #include "lib/types.h"
 
@@ -37,6 +38,7 @@ enum class ProcessState : uint8_t {
 using MemoryRegion = std::pair<uint64_t, uint64_t>;
 
 struct ProcessTask {
+  SpinLock lock;
   const char* name = nullptr;
   uint64_t pid = 0;
   RegFrame* frame = nullptr;

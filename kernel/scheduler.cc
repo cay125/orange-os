@@ -1,6 +1,7 @@
 #include "kernel/scheduler.h"
 
 #include "kernel/config/memory_layout.h"
+#include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
 #include "kernel/virtual_memory.h"
 
@@ -37,6 +38,31 @@ void Schedueler::InitTimer() {
   riscv::regs::mie.set_bit(riscv::MIE::MTIE);
 }
 
+void Schedueler::Sleep() {
+  CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
+  if (!current_cpu->process_task) {
+    panic();
+  }
+
+  {
+    CriticalGuard guard;
+    current_cpu->process_task->state = ProcessState::sleep;
+    Switch(&current_cpu->process_task->saved_context,
+           &current_cpu->saved_context);
+  }
+}
+
+void Schedueler::ClockInterrupt() {
+  ticks = ticks + 1;
+  for (auto& task : process_tasks_) {
+    // noly cpu-0 can see sleep_status, no need to lock now
+    if (task.state == ProcessState::sleep) {
+      CriticalGuard guard(&task.lock);
+      task.state = ProcessState::runnable;
+    }
+  }
+}
+
 ProcessTask* Schedueler::AllocProc() {
   for (ProcessTask& task : process_tasks_) {
     if (task.state == ProcessState::unused) {
@@ -70,11 +96,17 @@ ProcessTask* Schedueler::ThisProcess() {
   return current_cpu->process_task; 
 }
 
+CpuTask* Schedueler::ThisCpu() {
+  return &cpu_task_[riscv::regs::mhartid.read()];
+}
+
 __attribute__ ((noreturn))
 void Schedueler::Dispatch() {
   while (true) {
+    global_interrunpt_on();
     CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
     for (ProcessTask& task : process_tasks_) {
+      CriticalGuard lk(&task.lock);
       if (task.state == ProcessState::runnable) {
         current_cpu->process_task = &task;
         task.state = ProcessState::running;

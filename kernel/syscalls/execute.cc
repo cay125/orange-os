@@ -111,10 +111,8 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
 void TrapRet(ProcessTask* process, riscv::Exception exception) {
   global_interrunpt_off();
   RegFrame* frame = process->frame;
-  if (exception != riscv::Exception::environment_call_from_u_mode) {
-    riscv::regs::satp.write(riscv::virtual_addresing::Sv39, process->page_table);
-    riscv::isa::sfence();
-  }
+  riscv::regs::satp.write(riscv::virtual_addresing::Sv39, process->page_table);
+  riscv::isa::sfence();
   riscv::regs::mepc.write(frame->mepc);
   riscv::regs::mtvec.write_vec(user_exception_table, true);
   riscv::regs::mstatus.set_mpp(riscv::MPP::user_mode);

@@ -9,9 +9,19 @@ namespace syscall {
 
 Manager Manager::manager_;
 
+int mock_syscall() {
+  printf("Non-implement syscall\n");
+  return 0;
+}
+
 int (*Manager::syscalls[])(void) = {
   [SYSCALL_fork]    = sys_fork,
   [SYSCALL_write]   = sys_write,
+  [SYSCALL_read]    = mock_syscall,
+  [SYSCALL_exec]    = mock_syscall,
+  [SYSCALL_close]   = mock_syscall,
+  [SYSCALL_exit]    = mock_syscall,
+  [SYSCALL_sleep]   = sys_sleep,
 };
 
 Manager* Manager::Instance() {

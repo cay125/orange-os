@@ -28,6 +28,9 @@ void ProcessInterrupt() {
   riscv::Interrupt i_code = Schedueler::Instance()->ThisProcess()->frame->interrunpt();
   switch (i_code) {
   case riscv::Interrupt::m_timer:
+    if (cpu_id() == 0) {
+      Schedueler::Instance()->ClockInterrupt();
+    }
     Schedueler::Instance()->Yield();
     break;
   
@@ -56,6 +59,12 @@ void ProcessUserTrap() {
 void ProcessKernelTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::machine_mode) {
     panic();
+  }
+  if (cpu_id() == 0) {
+    Schedueler::Instance()->ClockInterrupt();
+  }
+  if (!Schedueler::Instance()->ThisCpu()->process_task) {
+    return;
   }
   Schedueler::Instance()->Yield();
   auto* process = Schedueler::Instance()->ThisProcess();

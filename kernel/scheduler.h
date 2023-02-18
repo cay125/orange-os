@@ -17,7 +17,13 @@ class Schedueler {
  public:
   static Schedueler* Instance();
   void Yield();
+  void Sleep();
+  void ClockInterrupt();
+  inline __attribute__((always_inline)) uint64_t SystemTick() {
+    return ticks;
+  }
   ProcessTask* ThisProcess();
+  CpuTask* ThisCpu();
   void InitTimer();
   void Dispatch();
   ProcessTask* AllocProc();
@@ -30,6 +36,7 @@ class Schedueler {
   ProcessTask process_tasks_[system_param::MAX_PROCESS_NUM];
   CpuTask cpu_task_[system_param::CPU_NUM];
   SchedulerInfo scheduler_info_;
+  volatile uint64_t ticks = 0;
 };
 
 }  // namespace kernel
