@@ -19,7 +19,6 @@ preserve_user_context:
   # to store a0
   csrr s1, mscratch
   sd s1,   A0_OFFSET(a0)
-  ld s1,   S1_OFFSET(a0)
 
   sd a1,   A1_OFFSET(a0)
   sd a2,   A2_OFFSET(a0)

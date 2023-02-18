@@ -67,9 +67,6 @@ void ProcessKernelTrap() {
     return;
   }
   Schedueler::Instance()->Yield();
-  auto* process = Schedueler::Instance()->ThisProcess();
-  riscv::regs::satp.write(riscv::virtual_addresing::Sv39, process->page_table);
-  riscv::isa::sfence();
   riscv::regs::mstatus.set_mpp(riscv::MPP::machine_mode);
   riscv::regs::mstatus.set_bit(riscv::StatusBit::mpie);
 }
