@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "arch/riscv_isa.h"
+#include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
 #include "lib/types.h"
 
@@ -42,6 +43,7 @@ class VirtualMemory {
   static bool has_init_;
   static VirtualMemory vm_;
   static MemoryChunk* memory_list_;
+  SpinLock lk_;
 };
 
 }  // namespace kernel

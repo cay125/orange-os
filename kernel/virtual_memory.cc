@@ -1,6 +1,7 @@
 #include "kernel/virtual_memory.h"
 
 #include "kernel/config/memory_layout.h"
+#include "kernel/lock/critical_guard.h"
 #include "kernel/regs_frame.hpp"
 #include "kernel/scheduler.h"
 #include "lib/string.h"
@@ -45,6 +46,7 @@ uint64_t* VirtualMemory::Alloc() {
   if (!memory_list_) {
     return nullptr;
   }
+  CriticalGuard guard(&lk_);
   auto* t = memory_list_;
   memory_list_ = memory_list_->next;
   memset(t, 0, sizeof(memory_layout::PGSIZE));
@@ -127,6 +129,7 @@ void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va) {
   if (pte && (*pte & riscv::PTE::V)) {
     uint64_t* sub_pte = reinterpret_cast<uint64_t*>((*pte << 2) & (0xfff'ffff'ffffL * memory_layout::PGSIZE));
     auto* t = reinterpret_cast<MemoryChunk*>(sub_pte);
+    CriticalGuard guard(&lk_);
     t->next = memory_list_;
     memory_list_ = t;
     *pte = 0x0;
@@ -136,6 +139,7 @@ void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va) {
 void VirtualMemory::FreePage(uint64_t* pa) {
   if (!pa) return;
   auto* t = reinterpret_cast<MemoryChunk*>(pa);
+  CriticalGuard guard(&lk_);
   t->next = memory_list_;
   memory_list_ = t;
 }
