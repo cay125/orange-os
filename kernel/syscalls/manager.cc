@@ -7,8 +7,6 @@
 namespace kernel {
 namespace syscall {
 
-Manager Manager::manager_;
-
 int mock_syscall() {
   printf("Non-implement syscall\n");
   return 0;
@@ -23,10 +21,6 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_exit]    = mock_syscall,
   [SYSCALL_sleep]   = sys_sleep,
 };
-
-Manager* Manager::Instance() {
-  return &manager_;
-}
 
 int Manager::Sum() {
   return sizeof(syscalls) / sizeof(syscalls[0]);

@@ -6,6 +6,7 @@
 #include "arch/riscv_isa.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
+#include "lib/singleton.h"
 #include "lib/types.h"
 
 namespace kernel {
@@ -15,9 +16,9 @@ struct MemoryChunk{
 };
 
 
-class VirtualMemory {
+class VirtualMemory : public lib::Singleton<VirtualMemory> {
  public:
-  static VirtualMemory* Instance();
+  friend class lib::Singleton<VirtualMemory>;
   
   bool Init();
   bool HasInit();
@@ -40,9 +41,8 @@ class VirtualMemory {
 
   uint64_t* GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc);
 
-  static bool has_init_;
-  static VirtualMemory vm_;
-  static MemoryChunk* memory_list_;
+  bool has_init_ = false;
+  MemoryChunk* memory_list_ = nullptr;
   SpinLock lk_;
 };
 

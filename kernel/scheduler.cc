@@ -9,12 +9,6 @@ extern "C" void Switch(kernel::SavedContext* c1, kernel::SavedContext* c2);
 
 namespace kernel {
 
-Schedueler Schedueler::sche_;
-
-Schedueler* Schedueler::Instance() {
-  return &sche_;
-}
-
 const SchedulerInfo* Schedueler::scheduler_info() {
   return &scheduler_info_;
 }

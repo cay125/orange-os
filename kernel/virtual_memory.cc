@@ -12,14 +12,6 @@ namespace kernel {
 
 extern SchedulerInfo scheduler_info;
 
-VirtualMemory VirtualMemory::vm_;
-MemoryChunk* VirtualMemory::memory_list_ = nullptr;
-bool VirtualMemory::has_init_ = false;
-
-VirtualMemory* VirtualMemory::Instance() {
-  return &vm_;
-}
-
 bool VirtualMemory::Init() {
   if (!has_init_) {
     has_init_ = true;

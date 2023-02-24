@@ -4,6 +4,7 @@
 #include "kernel/config/system_param.h"
 #include "kernel/cpu.h"
 #include "kernel/process.h"
+#include "lib/singleton.h"
 #include "lib/types.h"
 
 namespace kernel {
@@ -13,9 +14,9 @@ struct SchedulerInfo {
   uint64_t interval;
 };
 
-class Schedueler {
+class Schedueler : public lib::Singleton<Schedueler> {
  public:
-  static Schedueler* Instance();
+  friend class lib::Singleton<Schedueler>;
   void Yield();
   void Sleep();
   void ClockInterrupt();
@@ -31,7 +32,6 @@ class Schedueler {
 
  private:
   Schedueler() {}
-  static Schedueler sche_;
 
   ProcessTask process_tasks_[system_param::MAX_PROCESS_NUM];
   CpuTask cpu_task_[system_param::CPU_NUM];

@@ -1,18 +1,19 @@
 #ifndef KERNEL_SYSCALLS_MANAGER_H
 #define KERNEL_SYSCALLS_MANAGER_H
 
+#include "lib/singleton.h"
+
 namespace kernel {
 namespace syscall {
 
-class Manager {
+class Manager : public lib::Singleton<Manager> {
  public:
-  static Manager* Instance();
+  friend class lib::Singleton<Manager>;
   int DoWork(int num);
   int Sum();
  private:
   Manager() {}
 
-  static Manager manager_;
   static int (*syscalls[])(void);
 };
 
