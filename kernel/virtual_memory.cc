@@ -24,8 +24,11 @@ bool VirtualMemory::Init() {
   }
   for (uint64_t i = beg; i < memory_layout::MEMORY_END; i += memory_layout::PGSIZE) {
     MemoryChunk* node = reinterpret_cast<MemoryChunk*>(i);
-    node->next = memory_list_;
-    memory_list_ = node;
+    memory_list_.Push(node);
+  }
+  memset(bit_map_, 0, sizeof(bit_map_));
+  for (uint64_t i = memory_layout::KERNEL_BASE; i < beg; i += memory_layout::PGSIZE) {
+    UpdateBitMap(i, BitMapAction::alloc);
   }
   return true;
 }
@@ -35,13 +38,10 @@ bool VirtualMemory::HasInit() {
 }
 
 uint64_t* VirtualMemory::Alloc() {
-  if (!memory_list_) {
-    return nullptr;
-  }
   CriticalGuard guard(&lk_);
-  auto* t = memory_list_;
-  memory_list_ = memory_list_->next;
+  auto* t = memory_list_.Pop();
   memset(t, 0, sizeof(memory_layout::PGSIZE));
+  UpdateBitMap(t, BitMapAction::alloc);
   return reinterpret_cast<uint64_t*>(t);
 }
 
@@ -122,8 +122,8 @@ void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va) {
     uint64_t* sub_pte = reinterpret_cast<uint64_t*>((*pte << 2) & (0xfff'ffff'ffffL * memory_layout::PGSIZE));
     auto* t = reinterpret_cast<MemoryChunk*>(sub_pte);
     CriticalGuard guard(&lk_);
-    t->next = memory_list_;
-    memory_list_ = t;
+    memory_list_.Push(t);
+    UpdateBitMap(t, BitMapAction::free);
     *pte = 0x0;
   }
 }
@@ -132,8 +132,8 @@ void VirtualMemory::FreePage(uint64_t* pa) {
   if (!pa) return;
   auto* t = reinterpret_cast<MemoryChunk*>(pa);
   CriticalGuard guard(&lk_);
-  t->next = memory_list_;
-  memory_list_ = t;
+  memory_list_.Push(t);
+  UpdateBitMap(pa, BitMapAction::free);
 }
 
 void VirtualMemory::FreePage(std::initializer_list<uint64_t*> pa_list) {

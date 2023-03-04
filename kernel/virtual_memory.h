@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "arch/riscv_isa.h"
+#include "kernel/config/memory_layout.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
 #include "lib/singleton.h"
@@ -11,8 +12,71 @@
 
 namespace kernel {
 
-struct MemoryChunk{
+class MemoryList;
+
+class MemoryChunk{
   MemoryChunk* next = nullptr;
+  MemoryChunk* previous = nullptr;
+  const MemoryList* identify = nullptr;
+
+  friend class MemoryList;
+};
+
+class MemoryList {
+ public:
+  void Push(MemoryChunk* chunk) {
+    chunk->next = head_;
+    chunk->previous = nullptr;
+    chunk->identify = this;
+    if (!head_) {
+      tail_ = chunk;
+    } else {
+      head_->previous = chunk;
+    }
+    head_ = chunk;
+    size_ += 1;
+  }
+
+  MemoryChunk* Pop() {
+    auto* t = head_;
+    if (!t) {
+      return nullptr;
+    }
+    head_ = head_->next;
+    size_ -= 1;
+    if (!head_) {
+      tail_ = nullptr;
+    } else {
+      head_->previous = nullptr;
+    }
+    return t;
+  }
+
+  bool Erase(MemoryChunk* chunk) {
+    // check wether chunk is head or tail node
+    if (!chunk->next && chunk != tail_) {
+      return false;
+    }
+    if (!chunk->previous && chunk != head_) {
+      return false;
+    }
+    if (chunk->identify != this) {
+      return false;
+    }
+    chunk->next->previous = chunk->previous;
+    chunk->previous->next = chunk->next;
+    size_ -= 1;
+    return true;
+  }
+
+  size_t Size() {
+    return size_;
+  }
+
+ private:
+  MemoryChunk* head_ = nullptr;
+  MemoryChunk* tail_ = nullptr;
+  size_t size_ = 0;
 };
 
 
@@ -41,8 +105,29 @@ class VirtualMemory : public lib::Singleton<VirtualMemory> {
 
   uint64_t* GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc);
 
+  enum class BitMapAction {
+    alloc = 1,
+    free = 2,
+  };
+  template <typename T, typename = std::enable_if_t<std::is_same_v<T, uint64_t*> || std::is_same_v<T, uint64_t> || std::is_same_v<T, MemoryChunk*>>>
+  void UpdateBitMap(T m, BitMapAction action) {
+    uint64_t pa = 0;
+    if constexpr (std::is_same_v<T, uint64_t>) {
+      pa = m;
+    } else {
+      pa = reinterpret_cast<uint64_t>(m);
+    }
+    auto page_index = (pa - memory_layout::KERNEL_BASE) / memory_layout::PGSIZE;
+    if (action == BitMapAction::alloc) {
+      bit_map_[page_index / 8] |= 1u << (page_index % 8);
+    } else if (action == BitMapAction::free) {
+      bit_map_[page_index / 8] &= ~(1u << (page_index % 8));
+    }
+  }
+
   bool has_init_ = false;
-  MemoryChunk* memory_list_ = nullptr;
+  MemoryList memory_list_;
+  uint8_t bit_map_[(memory_layout::MEMORY_END - memory_layout::KERNEL_BASE) / memory_layout::PGSIZE / 8] = {0};
   SpinLock lk_;
 };
 
