@@ -53,18 +53,28 @@ class MemoryList {
   }
 
   bool Erase(MemoryChunk* chunk) {
+    if (chunk->identify != this || (!chunk->next && !chunk->previous)) {
+      return false;
+    }
     // check wether chunk is head or tail node
-    if (!chunk->next && chunk != tail_) {
-      return false;
+    if (!chunk->next) {
+      if (chunk != tail_) {
+        return false;
+      } else {
+        tail_ = chunk->previous;
+      }
+    } else {
+      chunk->next->previous = chunk->previous;
     }
-    if (!chunk->previous && chunk != head_) {
-      return false;
+    if (!chunk->previous) {
+      if (chunk != head_) {
+        return false;
+      } else {
+        head_ = chunk->next;
+      }
+    } else {
+      chunk->previous->next = chunk->next;
     }
-    if (chunk->identify != this) {
-      return false;
-    }
-    chunk->next->previous = chunk->previous;
-    chunk->previous->next = chunk->next;
     size_ -= 1;
     return true;
   }
@@ -87,6 +97,7 @@ class VirtualMemory : public lib::Singleton<VirtualMemory> {
   bool Init();
   bool HasInit();
   uint64_t* Alloc();
+  uint64_t* AllocContinuousPage(uint8_t n);
   uint64_t* AllocProcessPageTable(ProcessTask* process);
   bool MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv::PTE privilege);
   void FreePage(uint64_t* root_page, uint64_t va);

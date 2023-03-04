@@ -1,5 +1,7 @@
 #include "kernel/virtual_memory.h"
 
+#include <iterator>
+
 #include "kernel/config/memory_layout.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/regs_frame.hpp"
@@ -43,6 +45,30 @@ uint64_t* VirtualMemory::Alloc() {
   memset(t, 0, sizeof(memory_layout::PGSIZE));
   UpdateBitMap(t, BitMapAction::alloc);
   return reinterpret_cast<uint64_t*>(t);
+}
+
+uint64_t* VirtualMemory::AllocContinuousPage(uint8_t n) {
+  constexpr uint8_t max_page_num = 8;
+  CriticalGuard guard(&lk_);
+  if (n > max_page_num) {
+    return nullptr;
+  }
+  uint16_t mask = ((1 << n) - 1) << (2 * max_page_num - n);
+  for (auto it = std::crbegin(bit_map_); it != std::crend(bit_map_); ++it) {
+    for (uint8_t i  = 0; i < 8; ++i) {
+      uint16_t t_mask = mask >> i;
+      if ((*it & (t_mask >> 8)) == 0 && ((t_mask & 0xff) == 0 || (*(it + 1) & (t_mask * 0xff)) == 0)) {
+        auto page_index = ((std::crend(bit_map_) - it) - 1) * 8 + max_page_num - n - i;
+        for (int j = 0; j < n; ++j) {
+          auto m = (page_index + j) * memory_layout::PGSIZE + memory_layout::KERNEL_BASE;
+          UpdateBitMap(m, BitMapAction::alloc);
+          memory_list_.Erase(reinterpret_cast<MemoryChunk*>(m));
+        }
+        return reinterpret_cast<uint64_t*>(page_index * memory_layout::PGSIZE + memory_layout::KERNEL_BASE);
+      }
+    }
+  }
+  return nullptr;
 }
 
 uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
