@@ -119,6 +119,8 @@ enum class Interrupt : uint8_t {
   m_external = 11,
 };
 
+}  // namespace riscv
+
 template <typename T1, typename T2, std::enable_if_t<std::is_enum_v<T1>, bool> = true, std::enable_if_t<std::is_integral_v<T2>, bool> = true>
 inline std::underlying_type_t<T1> operator << (T1& t1, T2 t2) {
   return static_cast<std::underlying_type_t<T1>>(t1) << t2;
@@ -172,7 +174,14 @@ inline T1& operator |= (T1& t1, T2 t2) {
   return t1;
 }
 
+template <typename T1, typename T2, std::enable_if_t<std::is_integral_v<T1>, bool> = true, std::enable_if_t<std::is_enum_v<T2>, bool> = true>
+inline T1 operator + (T1 t1, T2 t2) {
+  return t1 + static_cast<std::underlying_type_t<T2>>(t2);
+}
 
-}  // namespace riscv
+template <typename T1, typename T2, std::enable_if_t<std::is_integral_v<T1>, bool> = true, std::enable_if_t<std::is_enum_v<T2>, bool> = true>
+inline bool operator == (T1 t1, T2 t2) {
+  return t1 == static_cast<std::underlying_type_t<T2>>(t2);
+}
 
 #endif  // ARCH_RISCV_ISA_H
