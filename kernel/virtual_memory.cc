@@ -42,7 +42,7 @@ bool VirtualMemory::HasInit() {
 uint64_t* VirtualMemory::Alloc() {
   CriticalGuard guard(&lk_);
   auto* t = memory_list_.Pop();
-  memset(t, 0, sizeof(memory_layout::PGSIZE));
+  memset(t, 0, memory_layout::PGSIZE);
   UpdateBitMap(t, BitMapAction::alloc);
   return reinterpret_cast<uint64_t*>(t);
 }
@@ -63,6 +63,7 @@ uint64_t* VirtualMemory::AllocContinuousPage(uint8_t n) {
           auto m = (page_index + j) * memory_layout::PGSIZE + memory_layout::KERNEL_BASE;
           UpdateBitMap(m, BitMapAction::alloc);
           memory_list_.Erase(reinterpret_cast<MemoryChunk*>(m));
+          memset(reinterpret_cast<uint8_t*>(m), 0, memory_layout::PGSIZE);
         }
         return reinterpret_cast<uint64_t*>(page_index * memory_layout::PGSIZE + memory_layout::KERNEL_BASE);
       }
