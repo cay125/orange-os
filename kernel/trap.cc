@@ -1,6 +1,7 @@
 #include "kernel/trap.h"
 
 #include "arch/riscv_reg.h"
+#include "kernel/extern_controller.h"
 #include "kernel/syscalls/syscall.h"
 #include "kernel/utils.h"
 #include "kernel/scheduler.h"
@@ -60,13 +61,18 @@ void ProcessKernelTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::machine_mode) {
     panic();
   }
-  if (cpu_id() == 0) {
-    Schedueler::Instance()->ClockInterrupt();
+  riscv::Interrupt i_code = riscv::regs::mcause.get_interrupt();
+  if (i_code == riscv::Interrupt::m_timer) {
+    if (cpu_id() == 0) {
+      Schedueler::Instance()->ClockInterrupt();
+    }
+    if (!Schedueler::Instance()->ThisCpu()->process_task) {
+      return;
+    }
+    Schedueler::Instance()->Yield();
+  } else if (i_code == riscv::Interrupt::m_external) {
+    ExternController::Instance()->DoWork();
   }
-  if (!Schedueler::Instance()->ThisCpu()->process_task) {
-    return;
-  }
-  Schedueler::Instance()->Yield();
   riscv::regs::mstatus.set_mpp(riscv::MPP::machine_mode);
   riscv::regs::mstatus.set_bit(riscv::StatusBit::mpie);
 }

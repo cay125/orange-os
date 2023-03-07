@@ -15,3 +15,5 @@ kernel_exception_table:
   j _ZN6kernel5panicEv;
 .org  kernel_exception_table + 7*4;
   j kernel_timer_handler;
+.org  kernel_exception_table + 11*4;
+  j kernel_intr_hander;
