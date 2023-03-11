@@ -4,6 +4,7 @@
 #include "arch/riscv_reg.h"
 #include "driver/uart.h"
 #include "kernel/config/memory_layout.h"
+#include "kernel/global_channel.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
@@ -81,7 +82,7 @@ int sys_sleep() {
   uint64_t current_tick = Schedueler::Instance()->SystemTick();
   auto sleep_time = comm::GetIntegralArg<uint64_t>(0);
   while ((Schedueler::Instance()->SystemTick() - current_tick) < sleep_time) {
-    Schedueler::Instance()->Sleep();
+    Schedueler::Instance()->Sleep(GlobalChannel::sleep_channel());
   }
   if ((Schedueler::Instance()->SystemTick() - current_tick) >= sleep_time) {
     return 0;

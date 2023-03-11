@@ -1,6 +1,7 @@
 #include "kernel/scheduler.h"
 
 #include "kernel/config/memory_layout.h"
+#include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
 #include "kernel/virtual_memory.h"
@@ -18,6 +19,7 @@ void Schedueler::Yield() {
   if (!current_cpu->process_task) {
     panic();
   }
+  CriticalGuard guard(&current_cpu->process_task->lock);
   current_cpu->process_task->state = ProcessState::runnable;
   Switch(&current_cpu->process_task->saved_context,
            &current_cpu->saved_context);
@@ -32,29 +34,41 @@ void Schedueler::InitTimer() {
   riscv::regs::mie.set_bit(riscv::MIE::MTIE);
 }
 
-void Schedueler::Sleep() {
+void Schedueler::Sleep(Channel* channel, SpinLock* lk) {
   CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
-  if (!current_cpu->process_task) {
+  if (!current_cpu->process_task ||
+      current_cpu->process_task->state != ProcessState::running) {
     panic();
   }
 
   {
-    CriticalGuard guard;
+    CriticalGuard guard(&current_cpu->process_task->lock);
+    if (lk) {
+      lk->UnLock();
+    }
     current_cpu->process_task->state = ProcessState::sleep;
+    current_cpu->process_task->channel = channel;
     Switch(&current_cpu->process_task->saved_context,
            &current_cpu->saved_context);
+    if (lk) {
+      lk->Lock();
+    }
+  }
+}
+
+void Schedueler::Wakeup(Channel* channel) {
+  for (auto& task : process_tasks_) {
+    CriticalGuard guard(&task.lock);
+    if (task.state == ProcessState::sleep && (*task.channel) == (*channel)) {
+      task.state = ProcessState::runnable;
+      task.channel = nullptr;
+    }
   }
 }
 
 void Schedueler::ClockInterrupt() {
   ticks = ticks + 1;
-  for (auto& task : process_tasks_) {
-    // noly cpu-0 can see sleep_status, no need to lock now
-    if (task.state == ProcessState::sleep) {
-      CriticalGuard guard(&task.lock);
-      task.state = ProcessState::runnable;
-    }
-  }
+  Wakeup(GlobalChannel::sleep_channel());
 }
 
 ProcessTask* Schedueler::AllocProc() {

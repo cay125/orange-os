@@ -37,6 +37,17 @@ enum class ProcessState : uint8_t {
 // va_beg, va_end
 using MemoryRegion = std::pair<uint64_t, uint64_t>;
 
+class Channel {
+ public:
+  Channel(const void* ptr) : data_(ptr) {}
+  bool operator==(const Channel& ch) {
+    return ch.data_ == this->data_;
+  }
+
+ private:
+  const void* data_ = nullptr;
+};
+
 struct ProcessTask {
   SpinLock lock;
   const char* name = nullptr;
@@ -50,6 +61,7 @@ struct ProcessTask {
   ProcessState state = ProcessState::unused;
   SavedContext saved_context;
   ProcessTask* parent_process = nullptr;
+  Channel* channel = nullptr;
 };
 
 }  // namespace kernel

@@ -9,6 +9,8 @@
 
 namespace kernel {
 
+class SpinLock;
+
 struct SchedulerInfo {
   uint64_t mtime_cmp_addr;
   uint64_t interval;
@@ -18,7 +20,8 @@ class Schedueler : public lib::Singleton<Schedueler> {
  public:
   friend class lib::Singleton<Schedueler>;
   void Yield();
-  void Sleep();
+  void Sleep(Channel* channel, SpinLock* lk = nullptr);
+  void Wakeup(Channel* channel);
   void ClockInterrupt();
   inline __attribute__((always_inline)) uint64_t SystemTick() {
     return ticks;
