@@ -3,8 +3,10 @@
 #include "arch/riscv_isa.h"
 #include "kernel/extern_controller.h"
 #include "kernel/virtual_memory.h"
+#include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
 #include "kernel/printf.h"
+#include "kernel/scheduler.h"
 #include "lib/string.h"
 
 namespace driver {
@@ -26,7 +28,7 @@ Device::Device(riscv::plic::irq e) : irq_(e) {
 
 void Device::FreeDesc(uint32_t desc_index) {
   if (desc_index >= queue_buffer_size) kernel::panic();
-  if ((bit_map_[desc_index / 8] & (desc_index % 8)) == 0) kernel::panic();
+  if ((bit_map_[desc_index / 8] & (1 << desc_index % 8)) == 0) kernel::panic();
   bit_map_[desc_index / 8] &= ~(1 << (desc_index % 8));
   memset(queue->desc + desc_index, 0, sizeof(virtq_desc));
 }
@@ -37,7 +39,7 @@ void Device::FreeDesc(std::initializer_list<uint32_t> desc_list) {
   }
 }
 
-BlockDevice::BlockDevice(uint64_t virtio_addr, riscv::plic::irq e) : Device(e), addr_(virtio_addr) {
+BlockDevice::BlockDevice(uint64_t virtio_addr, riscv::plic::irq e) : Device(e), addr_(virtio_addr), channel_(this) {
 
 }
 
@@ -131,6 +133,7 @@ bool BlockDevice::Validate() {
 }
 
 bool BlockDevice::Alloc3Desc(std::array<uint32_t, 3>* descs) {
+  kernel::CriticalGuard guard(&lk_);
   (*descs)[0] = AllocDesc();
   if ((*descs)[0] < 0) {
     return false;
@@ -150,6 +153,7 @@ bool BlockDevice::Alloc3Desc(std::array<uint32_t, 3>* descs) {
 
 bool BlockDevice::Operate(Operation op, MetaData* meta_data) {
   if (op != Operation::read && op != Operation::write) {
+    kernel::printf("[virtio] device: %#x invalid operation", addr_);
     return false;
   }
   std::array<uint32_t, 3> descs;
@@ -182,24 +186,50 @@ bool BlockDevice::Operate(Operation op, MetaData* meta_data) {
   queue->desc[descs[2]].flags = virtq_desc_flag::VIRTQ_DESC_F_WRITE;
   queue->desc[descs[2]].next = 0;
 
-  queue->avail.ring[queue->avail.idx % queue_buffer_size] = descs[0];
+  {
+    kernel::CriticalGuard guard(&lk_);
+    queue->avail.ring[queue->avail.idx % queue_buffer_size] = descs[0];
 
-  __sync_synchronize();
+    __sync_synchronize();
 
-  queue->avail.idx += 1;
+    queue->avail.idx += 1;
 
-  internal_data_[descs[0]].waiting_flag = true;
+    internal_data_[descs[0]].waiting_flag = true;
 
-  __sync_synchronize();
+    __sync_synchronize();
 
-  MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueueNotify, 0);
+    MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueueNotify, 0);
+  }
 
-  while (internal_data_[descs[0]].waiting_flag);
+  // try to get waiting_flag
+  const int max_try_cnt = 20;
+  int cur_try_cnt = 0;
+  while (internal_data_[descs[0]].waiting_flag) {
+    cur_try_cnt += 1;
+    if (cur_try_cnt >= max_try_cnt) {
+      break;
+    }
+  }
+  if (cur_try_cnt < max_try_cnt) {
+    // lucky day
+    kernel::CriticalGuard guard(&lk_);
+    FreeDesc({descs[0], descs[1], descs[2]});
+    return true;
+  }
+
+  {
+    kernel::CriticalGuard guard(&lk_);
+    while (internal_data_[descs[0]].waiting_flag) {
+      kernel::Schedueler::Instance()->Sleep(&channel_, &lk_);
+    }
+    FreeDesc({descs[0], descs[1], descs[2]});
+  }
 
   return true;
 }
 
 void BlockDevice::ProcessInterrupt() {
+  kernel::CriticalGuard guard(&lk_);
   auto interrupt_status = MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::InterruptStatus);
   MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::InterruptACK, interrupt_status & 0x3);
   __sync_synchronize();
@@ -208,6 +238,7 @@ void BlockDevice::ProcessInterrupt() {
     auto& element = queue->used.ring[last_seen_used_idx_ % queue_buffer_size];
     internal_data_[element.id].waiting_flag = false;
     last_seen_used_idx_ += 1;
+    kernel::Schedueler::Instance()->Wakeup(&channel_);
   }
 }
 

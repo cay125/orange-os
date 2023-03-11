@@ -6,6 +6,8 @@
 
 #include "arch/riscv_plic.h"
 #include "kernel/config/memory_layout.h"
+#include "kernel/lock/spin_lock.h"
+#include "kernel/process.h"
 #include "lib/singleton.h"
 #include "lib/types.h"
 
@@ -279,6 +281,8 @@ class BlockDevice : public Device {
   uint64_t addr_ = 0;
   uint64_t capacity_ = 0;
   uint32_t last_seen_used_idx_ = 0;
+  kernel::SpinLock lk_;
+  kernel::Channel channel_;
 };
 
 }  // namespace virtio
