@@ -1,0 +1,10 @@
+add_custom_command(
+  OUTPUT mkfs
+  COMMAND g++ ${CMAKE_SOURCE_DIR}/filesystem/mkfs.cc -I${CMAKE_SOURCE_DIR} -o mkfs
+  DEPENDS mkfs.cc inode_def.h
+)
+
+add_custom_target(
+  gen_mkfs
+  DEPENDS mkfs
+)
