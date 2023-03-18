@@ -237,10 +237,12 @@ struct MetaData {
 
 class Device {
  public:
-  Device(riscv::plic::irq e);
+  Device();
+  void Init(riscv::plic::irq e);
   virtual device_id GetDeviceId() = 0;
   virtual std::array<Operation, 64> GetSupportedOperation() = 0;
   virtual void ProcessInterrupt() = 0;
+  virtual bool Operate(Operation op, MetaData* meta_data) = 0;
 
  protected:
   int AllocDesc();
@@ -259,9 +261,9 @@ class Device {
 
 class BlockDevice : public Device {
  public:
-  BlockDevice(uint64_t virtio_addr, riscv::plic::irq e);
-  bool Init();
-  bool Operate(Operation op, MetaData* meta_data);
+  BlockDevice();
+  bool Init(uint64_t virtio_addr, riscv::plic::irq e);
+  bool Operate(Operation op, MetaData* meta_data) override;
 
   device_id GetDeviceId() override {
     return device_id::block_device;

@@ -100,12 +100,12 @@ int main(int argc, char* argv[]) {
     auto cur_root_data_index = root_inode.size / fs::BLOCK_SIZE;
     if (!root_inode.addr[cur_root_data_index]) {
       root_inode.addr[cur_root_data_index] = cur_data_block;
+      cur_data_block += 1;
     }
     auto cur_inode_data_offset = root_inode.size % fs::BLOCK_SIZE;
-    fs_img.seekp(cur_data_block * fs::BLOCK_SIZE + cur_inode_data_offset);
+    fs_img.seekp(root_inode.addr[cur_root_data_index] * fs::BLOCK_SIZE + cur_inode_data_offset);
     fs_img.write(reinterpret_cast<char*>(&dir_element), sizeof(dir_element));
 
-    cur_data_block += 1;
     root_inode.size += fs::DIR_ELEMENT_SIZE;
 
     // setup data block

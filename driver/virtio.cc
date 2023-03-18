@@ -22,7 +22,12 @@ int Device::AllocDesc() {
   return -1;
 }
 
-Device::Device(riscv::plic::irq e) : irq_(e) {
+Device::Device() {
+
+}
+
+void Device::Init(riscv::plic::irq e) {
+  irq_ = e;
   kernel::ExternController::Instance()->Register(e, this);
 }
 
@@ -39,11 +44,13 @@ void Device::FreeDesc(std::initializer_list<uint32_t> desc_list) {
   }
 }
 
-BlockDevice::BlockDevice(uint64_t virtio_addr, riscv::plic::irq e) : Device(e), addr_(virtio_addr), channel_(this) {
+BlockDevice::BlockDevice() : channel_(this) {
 
 }
 
-bool BlockDevice::Init() {
+bool BlockDevice::Init(uint64_t virtio_addr, riscv::plic::irq e) {
+  Device::Init(e);
+  addr_  = virtio_addr;
   if (!Validate()) {
     return false;
   }
