@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 
   // prepare root_inode
   fs::InodeDef root_inode{};
-  root_inode.type = fs::file_type::directory;
+  root_inode.type = fs::inode_type::directory;
   root_inode.link_count = 1;
 
   for (int i = 3; i < argc; ++i) {
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
 
     // setup inode
     fs::InodeDef inode{};
-    inode.type = fs::file_type::regular_file;
+    inode.type = fs::inode_type::regular_file;
     inode.size = file_size;
     inode.link_count = 1;
 
@@ -110,20 +110,21 @@ int main(int argc, char* argv[]) {
 
     // setup data block
     char buf[fs::BLOCK_SIZE] = {0};
-    fs::IndirectBlock indirect_block;
-    uint32_t cur_indirect_block_index = 0;
+    fs::IndirectBlock indirect_block{};
     std::streamsize cur_size = 0, total_processed_size = 0;
     file.seekg(0);
-    while (file.read(buf, sizeof(buf)) && (cur_size = file.gcount())) {
+    // ofstream.read() will return null when reach eof
+    while (file.read(buf, sizeof(buf)) || file.gcount()) {
+      cur_size = file.gcount();
       auto cur_data_index = total_processed_size / fs::BLOCK_SIZE;
-      if (total_processed_size <= (fs::DIRECT_ADDR_SIZE * fs::BLOCK_SIZE)) {
+      if (cur_data_index < fs::DIRECT_ADDR_SIZE) {
         inode.addr[cur_data_index] = cur_data_block;
       } else {
         if (!inode.indirect_addr) {
           inode.indirect_addr = cur_data_block;
+          cur_data_block += 1;
         }
-        indirect_block[cur_indirect_block_index] = ++cur_data_block;
-        cur_indirect_block_index += 1;
+        indirect_block[cur_data_index - fs::DIRECT_ADDR_SIZE] = cur_data_block;
       }
 
       fs_img.seekp(cur_data_block * fs::BLOCK_SIZE);
@@ -138,7 +139,7 @@ int main(int argc, char* argv[]) {
 
     if (indirect_block[0] != 0) {
       fs_img.seekp(inode.indirect_addr * fs::BLOCK_SIZE);
-      fs_img.write(reinterpret_cast<char*>(&indirect_block), sizeof(indirect_block));
+      fs_img.write(reinterpret_cast<char*>(indirect_block.data()), fs::BLOCK_SIZE);
     }
 
     cur_inode_index += 1;

@@ -8,5 +8,7 @@
 #define SYSCALL_close       4
 #define SYSCALL_exit        5
 #define SYSCALL_sleep       6
+#define SYSCALL_open        7
+#define SYSCALL_fstat       8
 
 #endif

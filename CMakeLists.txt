@@ -56,7 +56,7 @@ set(FS_IMG_SIZE 102400)
 add_custom_command(
   OUTPUT fs.img
   COMMAND ${CMAKE_BINARY_DIR}/filesystem/mkfs fs.img ${FS_IMG_SIZE} ${user_target_paths}
-  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs
+  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets}
 )
 
 add_custom_target(

@@ -15,11 +15,13 @@ int mock_syscall() {
 int (*Manager::syscalls[])(void) = {
   [SYSCALL_fork]    = sys_fork,
   [SYSCALL_write]   = sys_write,
-  [SYSCALL_read]    = mock_syscall,
+  [SYSCALL_read]    = sys_read,
   [SYSCALL_exec]    = mock_syscall,
   [SYSCALL_close]   = mock_syscall,
   [SYSCALL_exit]    = mock_syscall,
   [SYSCALL_sleep]   = sys_sleep,
+  [SYSCALL_open]    = sys_open,
+  [SYSCALL_fstat]   = sys_fstat,
 };
 
 int Manager::Sum() {

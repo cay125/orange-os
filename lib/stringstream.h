@@ -14,10 +14,6 @@ class StringStream : public StreamBase {
   virtual void Seek(size_t pos) override;
   virtual size_t Read(char* buf, size_t size) override;
   virtual size_t Size() const override;
-  virtual char& At(size_t index) const override;
-  virtual char* Head() const override;
-
-  virtual char* operator+ (size_t index) const override;
 
  private:
   char* buf_ = nullptr;

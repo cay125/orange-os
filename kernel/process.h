@@ -4,6 +4,7 @@
 #include <array>
 #include <utility>
 
+#include "filesystem/file_descriptor.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/regs_frame.hpp"
 #include "lib/types.h"
@@ -62,6 +63,7 @@ struct ProcessTask {
   SavedContext saved_context;
   ProcessTask* parent_process = nullptr;
   Channel* channel = nullptr;
+  std::array<fs::FileDescriptor, 16> file_descriptor;
 };
 
 }  // namespace kernel

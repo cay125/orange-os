@@ -8,15 +8,18 @@ namespace kernel {
 struct ProcessTask;
 
 void TrapRet(ProcessTask* process, riscv::Exception exception);
-void ExcuteInitProcess(char* code);
+void ExcuteInitProcess(char* code, size_t size);
 void ExecuteRet();
 
 namespace syscall {
 
 int sys_fork();
 int sys_write();
+int sys_read();
 int sys_exec();
 int sys_sleep();
+int sys_open();
+int sys_fstat();
 
 }  // namespace syscall
 }  // namespace kernel

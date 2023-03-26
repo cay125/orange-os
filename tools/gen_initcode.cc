@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
   }
   *p++ = '}';
   *p++ = ';';
+  sprintf(p, "\nlong initcode_size = %ld;\n", s.length());
   std::ofstream out("initcode.cc");
   out << buffer;
   return 0;

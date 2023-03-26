@@ -16,7 +16,7 @@ constexpr uint32_t ROOT_INODE = 0;
 
 using IndirectBlock = std::array<uint32_t, fs::BLOCK_SIZE / sizeof(uint32_t)>;
 
-const char* FSMAGIC = "oran";
+constexpr const char* FSMAGIC = "oran";
 
 struct SuperBlock {
   uint32_t magic;              // Must be FSMAGIC
@@ -32,15 +32,21 @@ struct DirElement {
   char name[MAX_FILE_NAME_LEN];
 };
 
-enum class file_type : uint8_t {
+enum class inode_type : uint8_t {
   directory = 1,
   regular_file = 2,
+};
+
+struct FileState {
+  uint32_t inode_index;
+  uint16_t link_count;
+  uint32_t size;
 };
 
 // disable struct align
 #pragma  pack(1)
 struct InodeDef {
-  file_type type;
+  inode_type type;
   uint16_t link_count;
   uint32_t size;
   uint32_t addr[DIRECT_ADDR_SIZE];

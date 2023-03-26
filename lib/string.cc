@@ -36,4 +36,23 @@ size_t strlen(const char* s) {
   return p - s;
 }
 
+int strcmp(const char *s1, const char *s2) {
+  auto len1 = strlen(s1);
+  auto len2 = strlen(s2);
+  if (len1 > len2) {
+    return 1;
+  } else if (len1 < len2) {
+    return -1;
+  }
+  for (size_t i = 0; i < len1; ++i) {
+    if (s1[i] > s2[i]) {
+      return 1;
+    }
+    if (s1[i] > s2[i]) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
 }

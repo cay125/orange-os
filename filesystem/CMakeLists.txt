@@ -8,3 +8,10 @@ add_custom_target(
   gen_mkfs
   DEPENDS mkfs
 )
+
+add_library(filesystem STATIC
+            inode_def.h
+            file_descriptor.h
+            filestream.cc filestream.h
+            common.cc common.h
+)

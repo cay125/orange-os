@@ -22,7 +22,7 @@ void user_exception_table();
 
 namespace kernel {
 
-bool LoadSegment(uint64_t* root_page, char* p, uint64_t va, size_t size) {
+bool LoadSegment(uint64_t* root_page, lib::StreamBase* stream, uint64_t va, size_t size) {
   while (size != 0) {
     uint64_t pa = VirtualMemory::Instance()->VAToPA(root_page, va);
     if (pa == 0) {
@@ -31,35 +31,40 @@ bool LoadSegment(uint64_t* root_page, char* p, uint64_t va, size_t size) {
     uint64_t remain_size = memory_layout::PGSIZE - pa % memory_layout::PGSIZE;
     size_t len = size > remain_size ? remain_size : size;
     size -= len;
+    char p[memory_layout::PGSIZE] = {0};
+    stream->Read(p, len);
     std::copy(p, p + len, reinterpret_cast<uint8_t*>(pa));
-    p += len;
     va = VirtualMemory::AddrCastDown(va) + memory_layout::PGSIZE;
   }
   return true;
 }
 
 int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
-  auto& p = *stream;
-  if (p[EI_MAG0] != ELFMAG0 || p[EI_MAG1] != ELFMAG1 || p[EI_MAG2] != ELFMAG2 || p[EI_MAG3] != ELFMAG3) {
+  char elf_ident[EI_NIDENT] = {0};
+  stream->Read(elf_ident, sizeof(elf_ident));
+  if (elf_ident[EI_MAG0] != ELFMAG0 || elf_ident[EI_MAG1] != ELFMAG1 || elf_ident[EI_MAG2] != ELFMAG2 || elf_ident[EI_MAG3] != ELFMAG3) {
     printf("exec: not a valid elf64 file\n");
-    printf("%x %c %c %c\n", p[0],p[1],p[2],p[3]);
+    printf("%x %c %c %c\n", elf_ident[0],elf_ident[1],elf_ident[2],elf_ident[3]);
     return -1;
   }
-  if (p[EI_CLASS] != ELFCLASS64) {
+  if (elf_ident[EI_CLASS] != ELFCLASS64) {
     printf("exec: only support 64bit program\n");
     return -1;
   }
-  if (p[EI_DATA] != ELFDATA2LSB) {
+  if (elf_ident[EI_DATA] != ELFDATA2LSB) {
     printf("exec: only support little endian\n");
     return -1;
   }
-  if (p[EI_VERSION] != EV_CURRENT) {
+  if (elf_ident[EI_VERSION] != EV_CURRENT) {
     printf("exec: elf version must be 1\n");
     return -1;
   }
-  const elf::Elf64_Ehdr* elf64_header = reinterpret_cast<const elf::Elf64_Ehdr*>(p.Head());
+  stream->Seek(0);
+  char elf_header[sizeof(elf::Elf64_Ehdr)] = {0};
+  stream->Read(elf_header, sizeof(elf_header));
+  const elf::Elf64_Ehdr* elf64_header = reinterpret_cast<const elf::Elf64_Ehdr*>(elf_header);
   if (elf64_header->e_type != ET_EXEC) {
-    printf("exec: not a exec program\n");
+    printf("exec: not a exec program, type: %d\n", elf64_header->e_type);
     return -1;
   }
   if (elf64_header->e_machine != EM_RISCV) {
@@ -70,7 +75,9 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
   uint64_t* root_page = kernel::VirtualMemory::Instance()->AllocProcessPageTable(process);
 
   for (int i = 0; i < elf64_header->e_phnum; ++i) {
-    const char* ph_head_p = p + elf64_header->e_phoff + i * elf64_header->e_phentsize;
+    stream->Seek(elf64_header->e_phoff + i * elf64_header->e_phentsize);
+    char ph_head_p[sizeof(elf::Elf64_Phdr)] = {0};
+    stream->Read(ph_head_p, sizeof(ph_head_p));
     const elf::Elf64_Phdr* ph = reinterpret_cast<const elf::Elf64_Phdr*>(ph_head_p);
     if (ph->p_type != PT_LOAD) {
       continue;
@@ -90,7 +97,8 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
       privi |= riscv::PTE::X;
     }
     VirtualMemory::Instance()->MapMemory(root_page, ph->p_vaddr, ph->p_vaddr + ph->p_memsz, privi | riscv::PTE::U);
-    if (!LoadSegment(root_page, p + ph->p_offset, ph->p_vaddr, ph->p_filesz)) {
+    stream->Seek(ph->p_offset);
+    if (!LoadSegment(root_page, stream, ph->p_vaddr, ph->p_filesz)) {
       printf("exec: Load Segment failed\n");
       return -1;
     }
@@ -124,8 +132,8 @@ void ExecuteRet() {
   TrapRet(Schedueler::Instance()->ThisProcess(), riscv::Exception::none);
 }
 
-void ExcuteInitProcess(char* code) {
-  lib::StringStream stringstream(code, strlen(code));
+void ExcuteInitProcess(char* code, size_t size) {
+  lib::StringStream stringstream(code, size);
   ProcessTask* process = Schedueler::Instance()->AllocProc();
   ExecuteImpl(&stringstream, process);
   process->state = ProcessState::runnable;

@@ -3,7 +3,7 @@ import sys
 import re
 if __name__ == '__main__':
   # argv[1]->compiler, argv[2]->input_file, argv[3]->output_file
-  if len(sys.argv) != 4:
+  if len(sys.argv) != 5:
     exit()
   funs = []
   with open(sys.argv[2]) as f:
@@ -11,9 +11,9 @@ if __name__ == '__main__':
       ret = re.match('\S+\s+\S+\(.*\);', line.strip())
       if ret:
         funs.append(ret.group().split()[1].split('(')[0])
-  sed_command = 'sed s/\;$/{}/ ' + sys.argv[2]
+  sed_command = 'sed s/\;$/{}/ ' + sys.argv[2] + ' | ' + "sed 's/" + '"' + "/" + '\\' + '\\' + '"' + "/g'"
   content = '"' + ''.join(os.popen(sed_command).readlines()) + '"'
-  compile_command = 'echo ' + content + ' | ' + sys.argv[1] + ' -x c++ - -o - -S -w | grep "^_" | sed "s/:$//"'
+  compile_command = 'echo ' + content + ' | ' + sys.argv[1] + ' -x c++ - -o - -I' + sys.argv[4] +  ' -S -w | grep "^_" | sed "s/:$//"'
   sys_call_impl = '#include "kernel/syscalls/syscall_num_def.h"\n\n'
   items = os.popen(compile_command).readlines()
   for index, item in enumerate(items):
