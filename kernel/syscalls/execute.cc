@@ -23,6 +23,17 @@ void user_exception_table();
 namespace kernel {
 
 bool LoadSegment(uint64_t* root_page, lib::StreamBase* stream, uint64_t va, size_t size) {
+  auto batch_load = [&stream](size_t len, char* dst){
+    const int memory_batch = 512;
+    while (len > 0) {
+      size_t remain = len > memory_batch ? memory_batch : len;
+      char p[memory_batch] = {0};
+      stream->Read(p, remain);
+      std::copy(p, p + remain, dst);
+      len -= remain;
+      dst += remain;
+    }
+  };
   while (size != 0) {
     uint64_t pa = VirtualMemory::Instance()->VAToPA(root_page, va);
     if (pa == 0) {
@@ -31,9 +42,7 @@ bool LoadSegment(uint64_t* root_page, lib::StreamBase* stream, uint64_t va, size
     uint64_t remain_size = memory_layout::PGSIZE - pa % memory_layout::PGSIZE;
     size_t len = size > remain_size ? remain_size : size;
     size -= len;
-    char p[memory_layout::PGSIZE] = {0};
-    stream->Read(p, len);
-    std::copy(p, p + len, reinterpret_cast<uint8_t*>(pa));
+    batch_load(len, reinterpret_cast<char*>(pa));
     va = VirtualMemory::AddrCastDown(va) + memory_layout::PGSIZE;
   }
   return true;
