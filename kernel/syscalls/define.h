@@ -3,6 +3,10 @@
 
 #include "arch/riscv_isa.h"
 
+namespace lib {
+class StreamBase;
+}
+
 namespace kernel {
 
 struct ProcessTask;
@@ -10,6 +14,7 @@ struct ProcessTask;
 void TrapRet(ProcessTask* process, riscv::Exception exception);
 void ExcuteInitProcess(char* code, size_t size);
 void ExecuteRet();
+int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process);
 
 namespace syscall {
 

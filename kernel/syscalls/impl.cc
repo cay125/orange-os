@@ -9,6 +9,7 @@
 #include "filesystem/filestream.h"
 #include "kernel/config/memory_layout.h"
 #include "kernel/global_channel.h"
+#include "kernel/lock/critical_guard.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
@@ -118,6 +119,23 @@ int sys_read() {
   return size;
 }
 
+int sys_exec() {
+  auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
+  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
+  fs::InodeDef inode{};
+  auto inode_index = fs::Open(path_name, &inode);
+  if (inode_index < 0) {
+    return -1;
+  }
+  CriticalGuard guard;
+  fs::FileStream filestream(inode);
+  ProcessTask* process = Schedueler::Instance()->AllocProc();
+  ExecuteImpl(&filestream, process);
+  process->state = ProcessState::runnable;
+  process->saved_context.ra = reinterpret_cast<uint64_t>(ExecuteRet);
+  return 0;
+}
+
 int sys_sleep() {
   uint64_t current_tick = Schedueler::Instance()->SystemTick();
   auto sleep_time = comm::GetIntegralArg<uint64_t>(0);
@@ -131,73 +149,20 @@ int sys_sleep() {
   }
 }
 
-int IteratorDir(fs::InodeDef* inode,
-                driver::virtio::Device* device,
-                const char* target_name) {
-  uint32_t current_offset = 0;
-  while (current_offset < inode->size) {
-    uint32_t current_addr_index = current_offset / fs::BLOCK_SIZE;
-    if (!inode->addr[current_addr_index]) {
-      kernel::panic();
-    }
-    driver::virtio::MetaData meta_data;
-    meta_data.block_index = inode->addr[current_addr_index];
-    device->Operate(driver::virtio::Operation::read, &meta_data);
-    auto p = meta_data.buf.begin();
-    while (current_offset < inode->size && (p != meta_data.buf.end())) {
-      auto* dir = reinterpret_cast<fs::DirElement*>(p);
-      if (strcmp(target_name, dir->name) == 0) {
-        return dir->inum;
-      }
-      p += fs::DIR_ELEMENT_SIZE;
-      current_offset += fs::DIR_ELEMENT_SIZE;
-    }
-  }
-  return -1;
-}
-
 int sys_open() {
   auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
   auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
-  if (!path_name || path_name[0] != '/') {
+  fs::InodeDef inode{};
+  auto inode_index = fs::Open(path_name, &inode);
+  if (inode_index < 0) {
     return -1;
   }
-  int path_level = -1;
-  const char* paths[16] = {nullptr};
-  const char* p = path_name;
-  auto path_len = strlen(path_name);
-  for (size_t i = 0; i < path_len;) {
-    while (*p && *p != '/') {
-      ++p;
-    }
-    if (*p && *(p + 1)) {
-      ++p;
-      paths[++path_level] = p;
-    }
-    i = p - path_name;
-  }
-
-  int current_inode_index = fs::ROOT_INODE;
-  auto device = driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0);
-  for (int i = 0; i <= path_level; ++i) {
-    fs::InodeDef inode{};
-    fs::GetInode(current_inode_index, &inode);
-    if (i != path_level && inode.type != fs::inode_type::directory) {
-      return -1;
-    }
-    int inum = IteratorDir(&inode, device, paths[i]);
-    if (inum < 0) {
-      return -1;
-    }
-    current_inode_index = inum;
-  }
-
   auto& fds = Schedueler::Instance()->ThisProcess()->file_descriptor;
   for (auto it = fds.begin(); it != fds.end(); ++it) {
     if (it->file_type == fs::FileType::none) {
       it->file_type = fs::FileType::disk_file;
-      it->inode_index = current_inode_index;
-      fs::GetInode(it->inode_index, &it->inode);
+      it->inode_index = inode_index;
+      it->inode = inode;
       it->offset = 0;
       return it - fds.begin();
     }

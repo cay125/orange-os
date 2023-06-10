@@ -6,6 +6,7 @@
 namespace fs {
 
 bool GetInode(uint32_t inode_index, fs::InodeDef* inode);
+ssize_t Open(const char* path, fs::InodeDef* inode);
 
 }  // namespace fs
 
