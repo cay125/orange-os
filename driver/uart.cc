@@ -1,5 +1,4 @@
 #include "driver/uart.h"
-#include "arch/riscv_plic.h"
 #include "kernel/config/memory_layout.h"
 #include "lib/common.h"
 

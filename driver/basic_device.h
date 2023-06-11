@@ -1,7 +1,7 @@
 #ifndef DRIVER_BASIC_DEVICE_H_
 #define DRIVER_BASIC_DEVICE_H_
 
-#include "arch/riscv_plic.h"
+#include "lib/types.h"
 
 namespace driver {
 

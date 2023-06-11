@@ -8,7 +8,6 @@
 #include "kernel/config/memory_layout.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
-#include "lib/singleton.h"
 #include "lib/types.h"
 
 namespace driver {
