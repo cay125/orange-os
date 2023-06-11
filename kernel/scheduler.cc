@@ -17,7 +17,7 @@ const SchedulerInfo* Schedueler::scheduler_info() {
 void Schedueler::Yield() {
   CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
   if (!current_cpu->process_task) {
-    panic();
+    panic("process_task in empty when try to yield");
   }
   CriticalGuard guard(&current_cpu->process_task->lock);
   current_cpu->process_task->state = ProcessState::runnable;
@@ -38,7 +38,7 @@ void Schedueler::Sleep(Channel* channel, SpinLock* lk) {
   CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
   if (!current_cpu->process_task ||
       current_cpu->process_task->state != ProcessState::running) {
-    panic();
+    panic("process_task's state is not running when try to sleep");
   }
 
   {

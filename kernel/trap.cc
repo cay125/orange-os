@@ -6,6 +6,7 @@
 #include "kernel/utils.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
+#include "lib/common.h"
 
 namespace kernel {
 
@@ -18,7 +19,7 @@ void ProcessException() {
     break;
   
   default:
-    panic();
+    panic("Unexpted exception code: %d", lib::common::literal(e_code));
     break;
   }
   Schedueler::Instance()->ThisProcess()->frame->mepc += 4;
@@ -36,7 +37,7 @@ void ProcessInterrupt() {
     break;
   
   default:
-    panic();
+    panic("Unexpectd interrunpt code: %d", lib::common::literal(i_code));
     break;
   }
   TrapRet(Schedueler::Instance()->ThisProcess(), riscv::Exception::none);
@@ -44,7 +45,7 @@ void ProcessInterrupt() {
 
 void ProcessUserTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::user_mode) {
-    panic();
+    panic("Invalid privilege mode, expected: user_mode");
   }
   auto* process = Schedueler::Instance()->ThisProcess();
   if (process->frame->mcause & riscv::EXCEPTION_MASK) {
@@ -59,7 +60,7 @@ void ProcessUserTrap() {
 
 void ProcessKernelTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::machine_mode) {
-    panic();
+    panic("Invalid privilege mode, expected: machine_mode");
   }
   riscv::Interrupt i_code = riscv::regs::mcause.get_interrupt();
   if (i_code == riscv::Interrupt::m_timer) {

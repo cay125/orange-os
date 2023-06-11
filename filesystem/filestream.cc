@@ -9,7 +9,7 @@ static uint64_t ConvertFsBlockToDriveBlock(uint64_t fs_block) {
   return fs_block * fs::BLOCK_SIZE / driver::virtio::block_size;
 }
 
-FileStream::FileStream(InodeDef& inode) : device_(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0)), inode_(inode) {
+FileStream::FileStream(InodeDef& inode) : device_(reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0))), inode_(inode) {
   
 }
 

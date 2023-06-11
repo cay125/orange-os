@@ -10,7 +10,7 @@ namespace fs {
 bool GetInode(uint32_t inode_index, fs::InodeDef* inode) {
   driver::virtio::MetaData meta_data;
   meta_data.block_index = inode_index * fs::INODE_ELEMENT_SIZE / fs::BLOCK_SIZE + 1;
-  auto* device = driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0);
+  auto* device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
   device->Operate(driver::virtio::Operation::read, &meta_data);
   *inode = *reinterpret_cast<fs::InodeDef*>(meta_data.buf.data() + (inode_index * fs::INODE_ELEMENT_SIZE % fs::BLOCK_SIZE));
   return true;
@@ -23,7 +23,7 @@ int IteratorDir(fs::InodeDef* inode,
   while (current_offset < inode->size) {
     uint32_t current_addr_index = current_offset / fs::BLOCK_SIZE;
     if (!inode->addr[current_addr_index]) {
-      kernel::panic();
+      kernel::panic("Invalid inode");
     }
     driver::virtio::MetaData meta_data;
     meta_data.block_index = inode->addr[current_addr_index];
@@ -61,7 +61,7 @@ ssize_t Open(const char* path_name, InodeDef* inode) {
   }
 
   int current_inode_index = fs::ROOT_INODE;
-  auto device = driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0);
+  auto device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
   for (int i = 0; i <= path_level; ++i) {
     InodeDef inode{};
     GetInode(current_inode_index, &inode);

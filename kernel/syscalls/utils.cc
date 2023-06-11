@@ -11,7 +11,7 @@ namespace comm {
 
 uint64_t GetRawArg(int order) {
   if (order > 6 || order < 0) {
-    panic();
+    panic("Invalid arg order: %d", order);
   }
   auto frame = Schedueler::Instance()->ThisProcess()->frame;
   switch (order) {
@@ -29,15 +29,13 @@ uint64_t GetRawArg(int order) {
     return frame->a5;
   case 6:
     return frame->a6;
-  default:
-    panic();
   }
   return -1;
 }
 
 void SetRawArg(int order, uint64_t value) {
   if (order > 6 || order < 0) {
-    panic();
+    panic("Invalid arg order: %d", order);
   }
   auto frame = Schedueler::Instance()->ThisProcess()->frame;
   switch (order) {
@@ -62,8 +60,6 @@ void SetRawArg(int order, uint64_t value) {
   case 6:
     frame->a6 = value;
     return;
-  default:
-    panic();
   }
 }
 

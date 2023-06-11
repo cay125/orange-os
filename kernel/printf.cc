@@ -9,7 +9,7 @@ void printf(const char *fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
 	auto f = [](char c){
-		driver::put_char(c);
+		driver::Uart::put_char(c);
 	};
 	simple_vsprintf(nullptr, fmt, va, f);
 	va_end(va);

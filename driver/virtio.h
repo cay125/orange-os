@@ -4,7 +4,7 @@
 #include <array>
 #include <initializer_list>
 
-#include "arch/riscv_plic.h"
+#include "driver/basic_device.h"
 #include "kernel/config/memory_layout.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
@@ -235,13 +235,11 @@ struct MetaData {
   uint64_t block_index;
 };
 
-class Device {
+class Device : public BasicDevice {
  public:
   Device();
-  void Init(riscv::plic::irq e);
   virtual device_id GetDeviceId() = 0;
   virtual std::array<Operation, 64> GetSupportedOperation() = 0;
-  virtual void ProcessInterrupt() = 0;
   virtual bool Operate(Operation op, MetaData* meta_data) = 0;
 
  protected:
@@ -251,7 +249,6 @@ class Device {
 
   uint8_t bit_map_[queue_buffer_size / 8] = {0};
   virt_queue* queue = nullptr;
-  riscv::plic::irq irq_ = riscv::plic::irq::NONE;
   struct InternalData {
     volatile bool waiting_flag;
     uint8_t status = 0;
@@ -262,7 +259,7 @@ class Device {
 class BlockDevice : public Device {
  public:
   BlockDevice();
-  bool Init(uint64_t virtio_addr, riscv::plic::irq e);
+  bool Init(uint64_t virtio_addr) override;
   bool Operate(Operation op, MetaData* meta_data) override;
 
   device_id GetDeviceId() override {

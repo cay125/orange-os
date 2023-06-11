@@ -5,22 +5,28 @@
 #include <utility>
 
 #include "lib/singleton.h"
+#include "driver/basic_device.h"
+#include "driver/uart.h"
 #include "driver/virtio.h"
 
 namespace driver {
 
-enum class DeviceList : uint8_t {
+enum class DeviceList {
+  device_list_begin,
   disk0,
+  uart0,
+  device_list_end,
 };
 
 class DeviceFactory : public lib::Singleton<DeviceFactory> {
  public:
   friend class lib::Singleton<DeviceFactory>;
   void InitDevices();
-  driver::virtio::Device* GetDevice(DeviceList device);
+  driver::BasicDevice* GetDevice(DeviceList device);
 
  private:
   driver::virtio::BlockDevice blk_device0_;
+  driver::Uart uart_;
 };
 
 }  // namespace driver

@@ -11,7 +11,7 @@ CriticalGuard::CriticalGuard(SpinLock* lk) {
   global_interrunpt_off();
   if constexpr (system_param::CPU_NUM != 1) {
     if (!lk) {
-      panic();
+      panic("inpout lock is empty");
     }
     lk->Lock();
     lk_ = lk;

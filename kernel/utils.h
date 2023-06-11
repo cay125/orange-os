@@ -5,7 +5,7 @@
 
 namespace kernel {
 
-void panic();
+void panic(const char* fmt = nullptr, ...);
 
 template <typename T, int N>
 int Len(T (&arr)[N]) {

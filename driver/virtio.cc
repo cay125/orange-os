@@ -1,7 +1,6 @@
 #include "driver/virtio.h"
 
 #include "arch/riscv_isa.h"
-#include "kernel/extern_controller.h"
 #include "kernel/virtual_memory.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
@@ -26,14 +25,9 @@ Device::Device() {
 
 }
 
-void Device::Init(riscv::plic::irq e) {
-  irq_ = e;
-  kernel::ExternController::Instance()->Register(e, this);
-}
-
 void Device::FreeDesc(uint32_t desc_index) {
-  if (desc_index >= queue_buffer_size) kernel::panic();
-  if ((bit_map_[desc_index / 8] & (1 << desc_index % 8)) == 0) kernel::panic();
+  if (desc_index >= queue_buffer_size) kernel::panic("Invalid desc_index[%d] in virt-io: too bigger", desc_index);
+  if ((bit_map_[desc_index / 8] & (1 << desc_index % 8)) == 0) kernel::panic("Invalid desc_index[%d] in virt-io: weird num", desc_index);
   bit_map_[desc_index / 8] &= ~(1 << (desc_index % 8));
   memset(queue->desc + desc_index, 0, sizeof(virtq_desc));
 }
@@ -48,8 +42,7 @@ BlockDevice::BlockDevice() : channel_(this) {
 
 }
 
-bool BlockDevice::Init(uint64_t virtio_addr, riscv::plic::irq e) {
-  Device::Init(e);
+bool BlockDevice::Init(uint64_t virtio_addr) {
   addr_  = virtio_addr;
   if (!Validate()) {
     return false;

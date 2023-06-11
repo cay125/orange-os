@@ -79,7 +79,7 @@ int sys_write() {
   auto str_pa = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_pate, (uint64_t)str));
   if (fd == 1) {
     for (int i = 0; i < size; ++i) 
-      driver::put_char(str_pa[i]);
+      driver::Uart::put_char(str_pa[i]);
   }
   return 0;
 }

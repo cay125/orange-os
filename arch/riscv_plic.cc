@@ -17,10 +17,16 @@ static void set_priority_hander(irq e, uint8_t priority) {
 void globalinit() {
   // set interrupt irq priority
   set_priority_hander(irq::VIRTIO0_IRQ, 1);
+  set_priority_hander(irq::UARRT0_IRQ, 1);
 }
 
+using lib::common::literal;
+
 void hartinit(int hart_id) {
-  MEMORY_MAPPED_IO_W_WORD(memory_layout::PLIC_ENABLE(hart_id), 1 << lib::common::literal(irq::VIRTIO0_IRQ));
+  uint32_t enabled_irq = 0;
+  enabled_irq |= 1 << literal(irq::VIRTIO0_IRQ);
+  enabled_irq |= 1 << literal(irq::UARRT0_IRQ);
+  MEMORY_MAPPED_IO_W_WORD(memory_layout::PLIC_ENABLE(hart_id), enabled_irq);
   MEMORY_MAPPED_IO_W_WORD(memory_layout::PLIC_PRIORITY_THRESH(hart_id), 0);
   riscv::regs::mie.set_bit(riscv::MIE::MEIE);
 }

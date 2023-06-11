@@ -9,9 +9,7 @@
 #include "lib/types.h"
 
 namespace driver {
-namespace virtio {
-class Device;
-}  // namespace virtio
+class BasicDevice;
 }  // namespace driver
 
 namespace kernel {
@@ -19,14 +17,14 @@ namespace kernel {
 class ExternController : public lib::Singleton<ExternController> {
  public:
   friend class lib::Singleton<ExternController>;
-  void Register(riscv::plic::irq e, driver::virtio::Device* device);
+  void Register(riscv::plic::irq e, driver::BasicDevice* device);
   void DoWork();
 
  private:
-  driver::virtio::Device* GetDeviceByIRQ(uint32_t irq);
+  driver::BasicDevice* GetDeviceByIRQ(uint32_t irq);
 
   // irq <--> device
-  std::array<std::pair<riscv::plic::irq, driver::virtio::Device*>, 8> device_list_;
+  std::array<std::pair<riscv::plic::irq, driver::BasicDevice*>, 8> device_list_;
   uint32_t device_list_size_ = 0;
 };
 
