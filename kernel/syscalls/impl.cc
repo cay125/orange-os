@@ -109,7 +109,7 @@ int sys_read() {
     return -1;
   }
   auto size = comm::GetIntegralArg<size_t>(2);
-  if (fd->file_type == fs::FileType::disk_file) {
+  if (fd->file_type == fs::FileType::regular_file) {
     fs::FileStream file_stream(fd->inode);
     file_stream.Seek(fd->offset);
     size = file_stream.Read(buf, size);
@@ -161,13 +161,7 @@ int sys_open() {
   auto& fds = Schedueler::Instance()->ThisProcess()->file_descriptor;
   for (auto it = fds.begin(); it != fds.end(); ++it) {
     if (it->file_type == fs::FileType::none) {
-      if (inode.type == fs::inode_type::regular_file) {
-        it->file_type = fs::FileType::disk_file;
-      } else if (inode.type == fs::inode_type::directory) {
-        it->file_type = fs::FileType::directory;
-      } else if (inode.type == fs::inode_type::device) {
-        it->file_type = fs::FileType::device;
-      }
+      it->file_type = inode.type;
       it->inode_index = inode_index;
       it->inode = inode;
       it->offset = 0;
@@ -188,13 +182,7 @@ int sys_fstat() {
   f_stat->inode_index = fd->inode_index;
   f_stat->link_count = fd->inode.link_count;
   f_stat->size = fd->inode.size;
-  if (fd->file_type == fs::FileType::device) {
-    f_stat->type = fs::inode_type::device;
-  } else if (fd->file_type == fs::FileType::directory) {
-    f_stat->type = fs::inode_type::directory;
-  } else if (fd->file_type == fs::FileType::disk_file) {
-    f_stat->type = fs::inode_type::regular_file;
-  }
+  f_stat->type = fd->file_type;
   return 0;
 }
 

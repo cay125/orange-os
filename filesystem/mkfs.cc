@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
   // prepare root_inode
   fs::InodeDef root_inode{};
-  root_inode.type = fs::inode_type::directory;
+  root_inode.type = fs::FileType::directory;
   root_inode.link_count = 1;
 
   for (int i = 3; i < argc; ++i) {
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 
     // setup inode
     fs::InodeDef inode{};
-    inode.type = fs::inode_type::regular_file;
+    inode.type = fs::FileType::regular_file;
     inode.size = file_size;
     inode.link_count = 1;
 

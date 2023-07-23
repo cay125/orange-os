@@ -32,24 +32,24 @@ struct DirElement {
   char name[MAX_FILE_NAME_LEN];
 };
 
-enum class inode_type : uint8_t {
-  none = 0,
-  directory = 1,
-  regular_file = 2,
-  device = 3,
+enum class FileType : uint8_t {
+  none,
+  directory,
+  regular_file,
+  device,
 };
 
 struct FileState {
   uint32_t inode_index;
   uint16_t link_count;
   uint32_t size;
-  inode_type type;
+  FileType type;
 };
 
 // disable struct align
 #pragma  pack(1)
 struct InodeDef {
-  inode_type type;
+  FileType type;
   uint16_t link_count;
   uint8_t major;
   uint8_t minor;

@@ -107,7 +107,7 @@ ssize_t OpenImpl(const char paths[][fs::MAX_FILE_NAME_LEN], int path_level, Inod
   for (int i = 0; i <= path_level; ++i) {
     InodeDef inode{};
     GetInode(current_inode_index, &inode);
-    if (i != path_level && inode.type != fs::inode_type::directory) {
+    if (i != path_level && inode.type != fs::FileType::directory) {
       return -1;
     }
     int inum = IteratorDir(&inode, device, paths[i]);
@@ -173,7 +173,7 @@ std::pair<bool, uint32_t> AllocInode() {
     device->Operate(driver::virtio::Operation::read, &meta_data);
     auto* inode = reinterpret_cast<InodeDef*>(meta_data.buf.data());
     for (uint32_t j = 0; j < (fs::BLOCK_SIZE / fs::INODE_ELEMENT_SIZE); j++) {
-      if (inode[j].type == inode_type::none) {
+      if (inode[j].type == FileType::none) {
         return {true, i * (fs::BLOCK_SIZE / fs::INODE_ELEMENT_SIZE) + j};
       }
     }
@@ -187,7 +187,7 @@ std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const 
   }
   InodeDef inode{};
   GetInode(inode_index, &inode);
-  if (inode.type != inode_type::directory) {
+  if (inode.type != FileType::directory) {
     return {false, 0};
   }
   auto* device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
@@ -242,14 +242,10 @@ std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const 
   InodeDef target_inode{};
   target_inode.size = 0;
   if (type == FileType::device) {
-    target_inode.type = inode_type::device;
     target_inode.major = major;
     target_inode.minor = minor;
-  } else if (type == FileType::disk_file) {
-    target_inode.type = inode_type::regular_file;
-  } else if (type == FileType::directory) {
-    target_inode.type = inode_type::directory;
   }
+  target_inode.type = type;
   target_inode.link_count = 1;
   UpdateInode(new_inode_pair.second, &target_inode);
   return {true, new_inode_pair.second};
