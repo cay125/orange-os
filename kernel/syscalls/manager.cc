@@ -22,6 +22,7 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_sleep]   = sys_sleep,
   [SYSCALL_open]    = sys_open,
   [SYSCALL_fstat]   = sys_fstat,
+  [SYSCALL_mknod]   = sys_mknod,
 };
 
 int Manager::Sum() {

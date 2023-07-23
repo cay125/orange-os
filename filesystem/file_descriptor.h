@@ -10,6 +10,7 @@ enum class FileType : uint8_t {
   none,
   disk_file,
   device,
+  directory,
 };
 
 struct FileDescriptor {

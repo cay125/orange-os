@@ -33,14 +33,17 @@ struct DirElement {
 };
 
 enum class inode_type : uint8_t {
+  none = 0,
   directory = 1,
   regular_file = 2,
+  device = 3,
 };
 
 struct FileState {
   uint32_t inode_index;
   uint16_t link_count;
   uint32_t size;
+  inode_type type;
 };
 
 // disable struct align
@@ -48,10 +51,12 @@ struct FileState {
 struct InodeDef {
   inode_type type;
   uint16_t link_count;
+  uint8_t major;
+  uint8_t minor;
   uint32_t size;
   uint32_t addr[DIRECT_ADDR_SIZE];
   uint32_t indirect_addr;
-  uint8_t padding[64 - 59];
+  uint8_t padding[64 - 61];
 };
 #pragma  pack()
 

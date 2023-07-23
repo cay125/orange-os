@@ -7,6 +7,7 @@
 #include "filesystem/common.h"
 #include "filesystem/inode_def.h"
 #include "filesystem/filestream.h"
+#include "filesystem/file_descriptor.h"
 #include "kernel/config/memory_layout.h"
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
@@ -160,7 +161,13 @@ int sys_open() {
   auto& fds = Schedueler::Instance()->ThisProcess()->file_descriptor;
   for (auto it = fds.begin(); it != fds.end(); ++it) {
     if (it->file_type == fs::FileType::none) {
-      it->file_type = fs::FileType::disk_file;
+      if (inode.type == fs::inode_type::regular_file) {
+        it->file_type = fs::FileType::disk_file;
+      } else if (inode.type == fs::inode_type::directory) {
+        it->file_type = fs::FileType::directory;
+      } else if (inode.type == fs::inode_type::device) {
+        it->file_type = fs::FileType::device;
+      }
       it->inode_index = inode_index;
       it->inode = inode;
       it->offset = 0;
@@ -181,6 +188,25 @@ int sys_fstat() {
   f_stat->inode_index = fd->inode_index;
   f_stat->link_count = fd->inode.link_count;
   f_stat->size = fd->inode.size;
+  if (fd->file_type == fs::FileType::device) {
+    f_stat->type = fs::inode_type::device;
+  } else if (fd->file_type == fs::FileType::directory) {
+    f_stat->type = fs::inode_type::directory;
+  } else if (fd->file_type == fs::FileType::disk_file) {
+    f_stat->type = fs::inode_type::regular_file;
+  }
+  return 0;
+}
+
+int sys_mknod() {
+  auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
+  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
+  uint8_t major = comm::GetIntArg(1);
+  uint8_t minor = comm::GetIntArg(2);
+  bool ret = fs::Create(path_name, fs::FileType::device, major, minor);
+  if (!ret) {
+    return -1;
+  }
   return 0;
 }
 

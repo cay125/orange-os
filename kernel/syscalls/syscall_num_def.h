@@ -10,5 +10,6 @@
 #define SYSCALL_sleep       6
 #define SYSCALL_open        7
 #define SYSCALL_fstat       8
+#define SYSCALL_mknod       9
 
 #endif

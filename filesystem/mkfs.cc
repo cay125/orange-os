@@ -12,6 +12,16 @@ size_t MaxSupportFileSize() {
   return (fs::DIRECT_ADDR_SIZE + fs::BLOCK_SIZE / sizeof(fs::InodeDef::addr[0])) * fs::BLOCK_SIZE;
 }
 
+uint8_t bit_map[fs::BLOCK_SIZE] = {0};
+
+void UpdateBitMap(uint32_t cur_data_block, fs::SuperBlock* super_block, std::ofstream* fs_img) {
+  int byte_index = (cur_data_block - super_block->bmap_start - 1) / 8;
+  int byte_remain = (cur_data_block - super_block->bmap_start - 1) % 8;
+  bit_map[byte_index] |= (1 << byte_remain);
+  fs_img->seekp(super_block->bmap_start * fs::BLOCK_SIZE + byte_index);
+  fs_img->write(reinterpret_cast<char*>(&bit_map[byte_index]), 1);
+}
+
 int main(int argc, char* argv[]) {
   // 1 <-> img_name, 2 <-> img_size
   if (argc < 3) {
@@ -74,7 +84,7 @@ int main(int argc, char* argv[]) {
     }
     file.seekg(0, std::ios_base::end);
     auto file_size = file.tellg();
-    std::cout << "Procesing file: " << argv[i] << " file_size: " << file_size << "\n";
+    std::cout << "[fs] Procesing file: " << argv[i] << " file_size: " << file_size << "\n";
 
     if (file_size > MaxSupportFileSize()) {
       std::cout << "File_size too large, continued\n";
@@ -100,6 +110,7 @@ int main(int argc, char* argv[]) {
     auto cur_root_data_index = root_inode.size / fs::BLOCK_SIZE;
     if (!root_inode.addr[cur_root_data_index]) {
       root_inode.addr[cur_root_data_index] = cur_data_block;
+      UpdateBitMap(cur_data_block, &super_block, &fs_img);
       cur_data_block += 1;
     }
     auto cur_inode_data_offset = root_inode.size % fs::BLOCK_SIZE;
@@ -122,6 +133,7 @@ int main(int argc, char* argv[]) {
       } else {
         if (!inode.indirect_addr) {
           inode.indirect_addr = cur_data_block;
+          UpdateBitMap(cur_data_block, &super_block, &fs_img);
           cur_data_block += 1;
         }
         indirect_block[cur_data_index - fs::DIRECT_ADDR_SIZE] = cur_data_block;
@@ -130,6 +142,7 @@ int main(int argc, char* argv[]) {
       fs_img.seekp(cur_data_block * fs::BLOCK_SIZE);
       fs_img.write(buf, sizeof(buf));
 
+      UpdateBitMap(cur_data_block, &super_block, &fs_img);
       cur_data_block += 1;
       total_processed_size += cur_size;
     }
@@ -149,6 +162,10 @@ int main(int argc, char* argv[]) {
   fs_img.write(reinterpret_cast<char*>(&root_inode), sizeof(root_inode));
 
   fs_img.close();
+
+  std::cout << "[fs] total used inode_index: " << cur_inode_index
+            << "\n[fs] total used data block index: " << cur_data_block
+            << "\n";
 
   return 0;
 }
