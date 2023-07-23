@@ -83,12 +83,15 @@ int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
       }
       paths[++path_level] = p;
     }
-    i = p - path_name;
+    i = p - path_name + 1;
   }
   for (auto i = 0; i <= path_level; i++) {
     size_t len = (i < path_level) ? paths[i + 1] - paths[i] : strlen(paths[i]);
     if (len >= fs::MAX_FILE_NAME_LEN) {
       return -1;
+    }
+    if (paths[i][len - 1] == '/') {
+      len -= 1;
     }
     std::copy(paths[i], paths[i] + len, out_paths[i]);
   }
