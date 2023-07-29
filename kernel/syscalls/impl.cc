@@ -11,6 +11,7 @@
 #include "kernel/config/memory_layout.h"
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
+#include "kernel/resource_factory.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
@@ -109,11 +110,17 @@ int sys_read() {
     return -1;
   }
   auto size = comm::GetIntegralArg<size_t>(2);
-  if (fd->file_type == fs::FileType::regular_file) {
+  if (fd->file_type == fs::FileType::regular_file || fd->file_type == fs::FileType::directory) {
     fs::FileStream file_stream(fd->inode);
     file_stream.Seek(fd->offset);
     size = file_stream.Read(buf, size);
     fd->offset += size;
+  } else if (fd->file_type == fs::FileType::device) {
+    auto* r = ResourceFactory::Instance()->GetResource(fd->inode.major, fd->inode.minor);
+    if (!r) {
+      return -1;
+    }
+    size = r->read(buf, size);
   } else if (fd->file_type == fs::FileType::none) {
     return -1;
   }

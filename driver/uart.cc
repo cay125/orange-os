@@ -35,7 +35,8 @@ void Uart::ProcessInterrupt() {
       // input data is ready.
       uint8_t c = MEMORY_MAPPED_IO_R_Byte(addr_ + literal(UartReg::RHR));
       if (interrupt_callback) {
-        interrupt_callback(c);
+        char buf[1] = {c};
+        interrupt_callback(buf, 1);
       }
     } else {
       break;

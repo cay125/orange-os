@@ -12,7 +12,6 @@ class Uart : public BasicDevice {
 
  private:
   uint64_t addr_;
-  void(*interrupt_callback)(char) = nullptr;
 };
 
 }  // namespace driver

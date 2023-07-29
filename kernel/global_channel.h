@@ -11,8 +11,13 @@ class GlobalChannel {
     return &sleep_channel_;
   }
 
+  static Channel* console_channel() {
+    return &console_channel_;
+  }
+
  private:
   static Channel sleep_channel_;
+  static Channel console_channel_;
 };
 
 }  // namespace kernel
