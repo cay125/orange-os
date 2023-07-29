@@ -5,6 +5,7 @@
 #include "driver/device_factory.h"
 #include "driver/virtio.h"
 #include "kernel/printf.h"
+#include "kernel/scheduler.h"
 #include "kernel/utils.h"
 #include "lib/string.h"
 
@@ -63,19 +64,19 @@ int IteratorDir(fs::InodeDef* inode,
   return -1;
 }
 
-int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
-  if (!path_name || path_name[0] != '/') {
-    return -1;
-  }
+static int ParsePathImpl(const char* p, char out_paths[][fs::MAX_FILE_NAME_LEN], bool is_relative = false) {
   int path_level = -1;
   const char* paths[16] = {nullptr};
-  const char* p = path_name;
-  auto path_len = strlen(path_name);
-  for (size_t i = 0; i < path_len;) {
+  if (is_relative) {
+    paths[++path_level] = p;
+  }
+  while (true) {
     while (*p && *p != '/') {
       ++p;
     }
-    if (*p && *(p + 1)) {
+    if (!*p || !*(p + 1)) {
+      break;
+    } else {
       ++p;
       // patten like: "xx//xxx"
       if (*p == '/') {
@@ -83,7 +84,6 @@ int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
       }
       paths[++path_level] = p;
     }
-    i = p - path_name + 1;
   }
   for (auto i = 0; i <= path_level; i++) {
     size_t len = (i < path_level) ? paths[i + 1] - paths[i] : strlen(paths[i]);
@@ -95,7 +95,19 @@ int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
     }
     std::copy(paths[i], paths[i] + len, out_paths[i]);
   }
-  return path_level;
+  return path_level + 1;
+}
+
+int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
+  if (!path_name || strlen(path_name) == 0) {
+    return -1;
+  }
+  if (path_name[0] != '/') {
+    int level = ParsePathImpl(kernel::Schedueler::Instance()->ThisProcess()->current_path, out_paths);
+    return ParsePathImpl(path_name, out_paths + level, true);
+  } else {
+    return ParsePathImpl(path_name, out_paths);
+  }
 }
 
 ssize_t OpenImpl(const char paths[][fs::MAX_FILE_NAME_LEN], int path_level, InodeDef* output_inode, int entry_inode = -1) {
@@ -104,10 +116,10 @@ ssize_t OpenImpl(const char paths[][fs::MAX_FILE_NAME_LEN], int path_level, Inod
     current_inode_index = entry_inode;
   }
   auto device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
-  for (int i = 0; i <= path_level; ++i) {
+  for (int i = 0; i < path_level; ++i) {
     InodeDef inode{};
     GetInode(current_inode_index, &inode);
-    if (i != path_level && inode.type != fs::FileType::directory) {
+    if (i != (path_level - 1) && inode.type != fs::FileType::directory) {
       return -1;
     }
     int inum = IteratorDir(&inode, device, paths[i]);
@@ -260,17 +272,17 @@ bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) 
   }
   InodeDef inode{};
   int entry_inode = fs::ROOT_INODE;
-  for (int i = 0; i <= path_level; i++) {
-    auto open_ret = OpenImpl(paths + i, 0, &inode, entry_inode);
+  for (int i = 0; i < path_level; i++) {
+    auto open_ret = OpenImpl(paths + i, 1, &inode, entry_inode);
     if (open_ret < 0) {
-      auto create_ret = CreateImpl(entry_inode, (i == path_level) ? type : FileType::directory, paths[i], major, minor);
+      auto create_ret = CreateImpl(entry_inode, (i == (path_level - 1)) ? type : FileType::directory, paths[i], major, minor);
       if (!create_ret.first) {
         kernel::printf("Error: Create file failed, target: \"%s\"\n", paths + i);
         return false;
       }
       entry_inode = create_ret.second;
     } else {
-      if (i == path_level) {
+      if (i == (path_level - 1)) {
         kernel::printf("Warning: Target File: \"%s\" exists\n", path_name);
       }
       entry_inode = open_ret;

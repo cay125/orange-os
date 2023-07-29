@@ -64,6 +64,7 @@ struct ProcessTask {
   ProcessTask* parent_process = nullptr;
   Channel* channel = nullptr;
   std::array<fs::FileDescriptor, 16> file_descriptor;
+  char current_path[128] = "/";
 };
 
 }  // namespace kernel
