@@ -96,16 +96,18 @@ class VirtualMemory : public lib::Singleton<VirtualMemory> {
   
   bool Init();
   bool HasInit();
+  size_t GetFreePageSize();
   uint64_t* Alloc();
   uint64_t* AllocContinuousPage(uint8_t n);
   uint64_t* AllocProcessPageTable(ProcessTask* process);
   bool MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv::PTE privilege);
-  void FreePage(uint64_t* root_page, uint64_t va);
+  void FreePage(uint64_t* root_page, uint64_t va, int level = 3);
   void FreePage(uint64_t* pa);
   void FreePage(std::initializer_list<uint64_t*> pa_list);
   bool MapMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, riscv::PTE privilege);
   bool MapMemory(uint64_t* root_page, uint64_t va, uint64_t pa, size_t size, riscv::PTE privilege);
-  void FreeMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end);
+  void FreeMemory(uint64_t* root_page, uint64_t va_beg, uint64_t va_end, int level = 3);
+  static uint64_t GetUserSpVa();
   uint64_t VAToPA(uint64_t* root_page, uint64_t va, riscv::PTE* output_privi = nullptr);
   static uint64_t AddrCastUp(uint64_t addr);
   static uint64_t AddrCastDown(uint64_t addr);
@@ -114,7 +116,7 @@ class VirtualMemory : public lib::Singleton<VirtualMemory> {
   VirtualMemory() {}
   VirtualMemory(const VirtualMemory&) = delete;
 
-  uint64_t* GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc);
+  uint64_t* GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc, int level = 3);
 
   enum class BitMapAction {
     alloc = 1,
