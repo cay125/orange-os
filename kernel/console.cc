@@ -56,6 +56,11 @@ static void EchoChar(uint8_t c) {
   }
 }
 
+static void EchoBackSpace() {
+  const char* str = "\b \b";
+  kernel::printf(str);
+}
+
 void Console::InterruptHandler(const char* s, size_t len) {
   CriticalGuard guard(&context.lock);
   if ((context.write_index % buf_len - context.read_index % buf_len) == 0 && context.read_index != context.write_index) {
@@ -63,6 +68,11 @@ void Console::InterruptHandler(const char* s, size_t len) {
     return;
   }
   for (size_t i = 0; i < len; i++) {
+    if (s[i] == '\x7f') {
+      context.write_index--;
+      EchoBackSpace();
+      continue;
+    }
     context.buf[context.write_index % buf_len] = s[i];
     context.write_index += 1;
     EchoChar(s[i]);
