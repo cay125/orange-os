@@ -81,25 +81,6 @@ uint64_t VirtualMemory::GetUserSpVa() {
   return AddrCastDown(memory_layout::MAX_SUPPORT_VA);
 }
 
-uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
-  uint64_t* root_page = process->page_table;
-  uint64_t* stack_page = Alloc();
-  if (!stack_page) {
-    return nullptr;
-  }
-  uint64_t sp_va = AddrCastDown(memory_layout::MAX_SUPPORT_VA) - memory_layout::PGSIZE;
-  if (!MapPage(root_page, sp_va, (uint64_t)stack_page, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U)) {
-    FreePage(stack_page);
-    return nullptr;
-  }
-  process->user_sp = stack_page;
-  auto* reg_frame = process->frame;
-  reg_frame->kernel_sp = AddrCastDown((uint64_t)process->kernel_sp) + memory_layout::PGSIZE;
-  reg_frame->sp = sp_va + memory_layout::PGSIZE;
-  reg_frame->scheduler_info = Schedueler::Instance()->scheduler_info();
-  return root_page;
-}
-
 uint64_t* VirtualMemory::GetPTE(uint64_t* root_page, uint64_t va, bool need_alloc, int level) {
   if (!root_page) return nullptr;
   if (level < 1 || level >3) return nullptr;

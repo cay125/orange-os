@@ -52,8 +52,7 @@ int sys_fork() {
   if (!dst_pro) {
     return -1;
   }
-  uint64_t* dst_page_table = VirtualMemory::Instance()->AllocProcessPageTable(dst_pro);
-  if (!CopyMemory(src_pro->page_table, dst_page_table, src_pro->used_address, src_pro->used_address_size)) {
+  if (!CopyMemory(src_pro->page_table, dst_pro->page_table, src_pro->used_address, src_pro->used_address_size)) {
     return -1;
   }
   std::copy(src_pro->used_address.begin(), src_pro->used_address.begin() + src_pro->used_address_size, dst_pro->used_address.begin());
@@ -230,8 +229,9 @@ int sys_wait() {
     }
     CriticalGuard guard(&child->lock);
     if (child->state == ProcessState::zombie) {
+      int pid = child->pid;
       ProcessManager::ResetProcess(child);
-      return child->pid;
+      return pid;
     }
     Schedueler::Instance()->Sleep(&child->owned_channel, &child->lock);
   }

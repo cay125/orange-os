@@ -81,7 +81,7 @@ int ExecuteImpl(lib::StreamBase* stream, ProcessTask* process) {
     return -1;
   }
 
-  uint64_t* root_page = kernel::VirtualMemory::Instance()->AllocProcessPageTable(process);
+  uint64_t* root_page = process->page_table;
 
   for (int i = 0; i < elf64_header->e_phnum; ++i) {
     stream->Seek(elf64_header->e_phoff + i * elf64_header->e_phentsize);

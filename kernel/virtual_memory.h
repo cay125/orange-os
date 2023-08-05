@@ -99,7 +99,6 @@ class VirtualMemory : public lib::Singleton<VirtualMemory> {
   size_t GetFreePageSize();
   uint64_t* Alloc();
   uint64_t* AllocContinuousPage(uint8_t n);
-  uint64_t* AllocProcessPageTable(ProcessTask* process);
   bool MapPage(uint64_t* root_page, uint64_t va, uint64_t pa, riscv::PTE privilege);
   void FreePage(uint64_t* root_page, uint64_t va, int level = 3);
   void FreePage(uint64_t* pa);
