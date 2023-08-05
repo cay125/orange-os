@@ -7,6 +7,8 @@ user_exception_table:
   j preserve_user_context;
 .org  user_exception_table + 7*4;
   j user_timer_handler;
+.org  user_exception_table + 11*4;
+  j preserve_user_context;
 
 .align 16
 .global kernel_exception_table

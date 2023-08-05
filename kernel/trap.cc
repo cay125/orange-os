@@ -15,6 +15,7 @@ void ProcessException() {
   switch (e_code) {
   case riscv::Exception::environment_call_from_u_mode:
     global_interrunpt_on();
+    Schedueler::Instance()->ThisProcess()->frame->mepc += 4;
     ProcessSystemCall();
     break;
   
@@ -22,7 +23,6 @@ void ProcessException() {
     panic("Unexpted exception code: %d", lib::common::literal(e_code));
     break;
   }
-  Schedueler::Instance()->ThisProcess()->frame->mepc += 4;
   TrapRet(Schedueler::Instance()->ThisProcess(), e_code);
 }
 
@@ -34,6 +34,10 @@ void ProcessInterrupt() {
       Schedueler::Instance()->ClockInterrupt();
     }
     Schedueler::Instance()->Yield();
+    break;
+
+  case riscv::Interrupt::m_external:
+    ExternController::Instance()->DoWork();
     break;
   
   default:

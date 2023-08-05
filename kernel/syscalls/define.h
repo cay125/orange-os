@@ -26,6 +26,9 @@ int sys_sleep();
 int sys_open();
 int sys_fstat();
 int sys_mknod();
+int sys_getpid();
+int sys_exit();
+int sys_wait();
 
 }  // namespace syscall
 }  // namespace kernel

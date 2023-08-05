@@ -25,6 +25,15 @@ void Schedueler::Yield() {
            &current_cpu->saved_context);
 }
 
+void Schedueler::Exit() {
+  auto* process = ThisProcess();
+  CriticalGuard guard(&process->lock);
+  process->state = ProcessState::zombie;
+  Wakeup(&process->owned_channel);
+  Switch(&process->saved_context,
+         &ThisCpu()->saved_context);
+}
+
 void Schedueler::InitTimer() {
   uint64_t mtime_cmp = memory_layout::CLINT_MTIMECMP(riscv::regs::mhartid.read());
   uint64_t current_mtime = MEMORY_MAPPED_IO_R_DWORD(memory_layout::CLINT_MTIME);
@@ -66,6 +75,15 @@ void Schedueler::Wakeup(Channel* channel) {
   }
 }
 
+ProcessTask* Schedueler::FindFirslChild(const ProcessTask* parent){
+  for (auto& task : process_tasks_) {
+    if (task.parent_process == parent) {
+      return &task;
+    }
+  }
+  return nullptr;
+}
+
 void Schedueler::ClockInterrupt() {
   ticks = ticks + 1;
   Wakeup(GlobalChannel::sleep_channel());
@@ -73,26 +91,12 @@ void Schedueler::ClockInterrupt() {
 
 ProcessTask* Schedueler::AllocProc() {
   for (ProcessTask& task : process_tasks_) {
+    CriticalGuard guard(&task.lock);
     if (task.state == ProcessState::unused) {
-      auto frame_page = VirtualMemory::Instance()->Alloc();
-      if (!frame_page) {
+      if (!task.Init()) {
         return nullptr;
       }
-      task.frame = reinterpret_cast<RegFrame*>(frame_page);
-      auto sp_page = VirtualMemory::Instance()->Alloc();
-      if (!sp_page) {
-        task.frame = nullptr;
-        VirtualMemory::Instance()->FreePage(frame_page);
-        return nullptr;
-      }
-      auto root_page_table = VirtualMemory::Instance()->Alloc();
-      if (!root_page_table) {
-        VirtualMemory::Instance()->FreePage({frame_page, sp_page});
-        return nullptr;
-      }
-      task.page_table = root_page_table;
-      task.kernel_sp = sp_page;
-      task.saved_context.sp = reinterpret_cast<uint64_t>(task.kernel_sp) + memory_layout::PGSIZE;
+      task.state = ProcessState::used;
       return &task;
     }
   }

@@ -60,17 +60,16 @@ int sys_fork() {
   dst_pro->used_address_size = src_pro->used_address_size;
 
   memcpy(dst_pro->user_sp, src_pro->user_sp, memory_layout::PGSIZE);
-  dst_pro->saved_context.ra = reinterpret_cast<uint64_t>(ExecuteRet);
 
   // prepare trapframe
   memcpy(dst_pro->frame, src_pro->frame, sizeof(*dst_pro->frame));
-  dst_pro->frame->mepc += 4;
+  dst_pro->frame->kernel_sp = reinterpret_cast<uint64_t>(dst_pro->kernel_sp) + memory_layout::PGSIZE;
   dst_pro->frame->a0 = 0;
 
   dst_pro->state = ProcessState::runnable;
   dst_pro->parent_process = src_pro;
 
-  return 1;
+  return dst_pro->pid;
 }
 
 int sys_write() {
@@ -128,19 +127,27 @@ int sys_read() {
 }
 
 int sys_exec() {
-  auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
-  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
+  ProcessTask* process = Schedueler::Instance()->ThisProcess();
+  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
   fs::InodeDef inode{};
   auto inode_index = fs::Open(path_name, &inode);
   if (inode_index < 0) {
     return -1;
   }
+  ProcessTask tmp_process_task{};
+  tmp_process_task.kernel_sp = process->kernel_sp;
+  if (!tmp_process_task.Init(false)) {
+    return -1;
+  }
   CriticalGuard guard;
   fs::FileStream filestream(inode);
-  ProcessTask* process = Schedueler::Instance()->AllocProc();
-  ExecuteImpl(&filestream, process);
-  process->state = ProcessState::runnable;
-  process->saved_context.ra = reinterpret_cast<uint64_t>(ExecuteRet);
+  int ret = ExecuteImpl(&filestream, &tmp_process_task);
+  if (ret < 0) {
+    tmp_process_task.FreePageTable(false);
+    return -1;
+  }
+  process->FreePageTable(false);
+  process->CopyMemoryFrom(&tmp_process_task);
   return 0;
 }
 
@@ -201,6 +208,32 @@ int sys_mknod() {
   bool ret = fs::Create(path_name, fs::FileType::device, major, minor);
   if (!ret) {
     return -1;
+  }
+  return 0;
+}
+
+int sys_getpid() {
+  return Schedueler::Instance()->ThisProcess()->pid;
+}
+
+int sys_exit() {
+  Schedueler::Instance()->Exit();
+  return 0;
+}
+
+int sys_wait() {
+  auto* process = Schedueler::Instance()->ThisProcess();
+  while (true) {
+    auto* child = Schedueler::Instance()->FindFirslChild(process);
+    if (!child) {
+      return -1;
+    }
+    CriticalGuard guard(&child->lock);
+    if (child->state == ProcessState::zombie) {
+      ProcessManager::ResetProcess(child);
+      return child->pid;
+    }
+    Schedueler::Instance()->Sleep(&child->owned_channel, &child->lock);
   }
   return 0;
 }

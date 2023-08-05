@@ -12,6 +12,9 @@ ssize_t read(int fd, char* buf, size_t count);
 int fstat(int fd, void* f_stat);
 int exec(const char* path);
 int mknod(const char* path, uint8_t major, uint8_t minor);
+int getpid();
+int exit();
+int wait();
 
 }  // namespace syscall
 

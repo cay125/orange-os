@@ -18,11 +18,13 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_read]    = sys_read,
   [SYSCALL_exec]    = sys_exec,
   [SYSCALL_close]   = mock_syscall,
-  [SYSCALL_exit]    = mock_syscall,
+  [SYSCALL_exit]    = sys_exit,
   [SYSCALL_sleep]   = sys_sleep,
   [SYSCALL_open]    = sys_open,
   [SYSCALL_fstat]   = sys_fstat,
   [SYSCALL_mknod]   = sys_mknod,
+  [SYSCALL_getpid]  = sys_getpid,
+  [SYSCALL_wait]    = sys_wait,
 };
 
 int Manager::Sum() {

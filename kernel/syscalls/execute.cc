@@ -138,7 +138,9 @@ void TrapRet(ProcessTask* process, riscv::Exception exception) {
 }
 
 void ExecuteRet() {
-  TrapRet(Schedueler::Instance()->ThisProcess(), riscv::Exception::none);
+  auto* process = Schedueler::Instance()->ThisProcess();
+  process->lock.UnLock();
+  TrapRet(process, riscv::Exception::none);
 }
 
 void ExcuteInitProcess(char* code, size_t size) {
@@ -146,7 +148,6 @@ void ExcuteInitProcess(char* code, size_t size) {
   ProcessTask* process = Schedueler::Instance()->AllocProc();
   ExecuteImpl(&stringstream, process);
   process->state = ProcessState::runnable;
-  process->saved_context.ra = reinterpret_cast<uint64_t>(ExecuteRet);
 }
 
 }  // namespace kernel

@@ -22,6 +22,8 @@ class Schedueler : public lib::Singleton<Schedueler> {
   void Yield();
   void Sleep(Channel* channel, SpinLock* lk = nullptr);
   void Wakeup(Channel* channel);
+  void Exit();
+  ProcessTask* FindFirslChild(const ProcessTask* parent);
   void ClockInterrupt();
   inline __attribute__((always_inline)) uint64_t SystemTick() {
     return ticks;

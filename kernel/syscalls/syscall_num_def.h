@@ -11,5 +11,7 @@
 #define SYSCALL_open        7
 #define SYSCALL_fstat       8
 #define SYSCALL_mknod       9
+#define SYSCALL_getpid     10
+#define SYSCALL_wait       11
 
 #endif

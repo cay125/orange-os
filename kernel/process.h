@@ -30,9 +30,11 @@ struct SavedContext {
 
 enum class ProcessState : uint8_t {
   unused,
+  used,
   sleep,
   runnable,
   running,
+  zombie,
 };
 
 // va_beg, va_end
@@ -50,9 +52,10 @@ class Channel {
 };
 
 struct ProcessTask {
+  ProcessTask() : owned_channel(this) {}
   SpinLock lock;
   const char* name = nullptr;
-  uint64_t pid = 0;
+  int pid = 0;
   RegFrame* frame = nullptr;
   uint64_t* page_table = nullptr;
   size_t used_address_size = 0;
@@ -65,6 +68,16 @@ struct ProcessTask {
   Channel* channel = nullptr;
   std::array<fs::FileDescriptor, 16> file_descriptor;
   char current_path[128] = "/";
+  Channel owned_channel;
+  bool Init(bool need_init_kernel_info = true);
+  void FreePageTable(bool need_free_kernel_page = true);
+  void CopyMemoryFrom(const ProcessTask* process);
+};
+
+class ProcessManager {
+ public:
+  static int AllocPid();
+  static void ResetProcess(ProcessTask* process);
 };
 
 }  // namespace kernel

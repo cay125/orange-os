@@ -6,6 +6,7 @@
 #include "kernel/lock/critical_guard.h"
 #include "kernel/regs_frame.hpp"
 #include "kernel/scheduler.h"
+#include "kernel/utils.h"
 #include "lib/string.h"
 
 extern char memory_beg[];
@@ -93,7 +94,7 @@ uint64_t* VirtualMemory::AllocProcessPageTable(ProcessTask* process) {
   }
   process->user_sp = stack_page;
   auto* reg_frame = process->frame;
-  reg_frame->kernel_sp = (uint64_t)process->kernel_sp + memory_layout::PGSIZE;
+  reg_frame->kernel_sp = AddrCastDown((uint64_t)process->kernel_sp) + memory_layout::PGSIZE;
   reg_frame->sp = sp_va + memory_layout::PGSIZE;
   reg_frame->scheduler_info = Schedueler::Instance()->scheduler_info();
   return root_page;
@@ -165,7 +166,10 @@ void VirtualMemory::FreePage(uint64_t* root_page, uint64_t va, int level) {
 }
 
 void VirtualMemory::FreePage(uint64_t* pa) {
-  if (!pa) return;
+  if (!pa) {
+    kernel::panic("Error: Got empty page when trying to free\n");
+    return;
+  }
   auto* t = reinterpret_cast<MemoryChunk*>(pa);
   CriticalGuard guard(&lk_);
   memory_list_.Push(t);
