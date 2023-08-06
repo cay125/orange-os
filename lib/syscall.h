@@ -15,6 +15,7 @@ int mknod(const char* path, uint8_t major, uint8_t minor);
 int getpid();
 int exit();
 int wait();
+int getcwd(char* buf, size_t max_len);
 
 }  // namespace syscall
 

@@ -133,20 +133,28 @@ int sys_exec() {
   if (inode_index < 0) {
     return -1;
   }
-  ProcessTask tmp_process_task{};
-  tmp_process_task.kernel_sp = process->kernel_sp;
-  if (!tmp_process_task.Init(false)) {
+  auto* new_page = VirtualMemory::Instance()->Alloc();
+  if (!new_page) {
+    return -1;
+  }
+  if (sizeof(ProcessTask) > memory_layout::PGSIZE) {
+    kernel::panic("page size cannot cantain ProcessTask");
+  }
+  ProcessTask* tmp_process_task = reinterpret_cast<ProcessTask*>(new_page);
+  tmp_process_task->kernel_sp = process->kernel_sp;
+  if (!tmp_process_task->Init(false)) {
     return -1;
   }
   CriticalGuard guard;
   fs::FileStream filestream(inode);
-  int ret = ExecuteImpl(&filestream, &tmp_process_task);
+  int ret = ExecuteImpl(&filestream, tmp_process_task);
   if (ret < 0) {
-    tmp_process_task.FreePageTable(false);
+    tmp_process_task->FreePageTable(false);
     return -1;
   }
   process->FreePageTable(false);
-  process->CopyMemoryFrom(&tmp_process_task);
+  process->CopyMemoryFrom(tmp_process_task);
+  VirtualMemory::Instance()->FreePage(new_page);
   return 0;
 }
 
@@ -235,6 +243,19 @@ int sys_wait() {
     }
     Schedueler::Instance()->Sleep(&child->owned_channel, &child->lock);
   }
+  return 0;
+}
+
+int sys_getcwd() {
+  auto* process = Schedueler::Instance()->ThisProcess();
+  auto addr = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
+  auto max_len = comm::GetIntegralArg<size_t>(1);
+  size_t path_len = strlen(process->current_path);
+  if (path_len > max_len) {
+    return -1;
+  }
+  std::copy(process->current_path, process->current_path + path_len, addr);
+  addr[path_len] = '\0';
   return 0;
 }
 

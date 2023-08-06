@@ -39,6 +39,8 @@ enum class FileType : uint8_t {
   device,
 };
 
+const char* FileTypeName(FileType type);
+
 struct FileState {
   uint32_t inode_index;
   uint16_t link_count;

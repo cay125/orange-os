@@ -25,6 +25,7 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_mknod]   = sys_mknod,
   [SYSCALL_getpid]  = sys_getpid,
   [SYSCALL_wait]    = sys_wait,
+  [SYSCALL_getcwd]  = sys_getcwd,
 };
 
 int Manager::Sum() {

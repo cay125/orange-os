@@ -4,6 +4,7 @@
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
+#include "kernel/printf.h"
 #include "kernel/virtual_memory.h"
 
 extern "C" void Switch(kernel::SavedContext* c1, kernel::SavedContext* c2);
@@ -32,6 +33,13 @@ void Schedueler::Exit() {
   Wakeup(&process->owned_channel);
   Switch(&process->saved_context,
          &ThisCpu()->saved_context);
+}
+
+void Schedueler::SetInitProcess(const ProcessTask* process) {
+  init_process_ = process;
+}
+const ProcessTask* Schedueler::GetInitProcess() {
+  return init_process_;
 }
 
 void Schedueler::InitTimer() {

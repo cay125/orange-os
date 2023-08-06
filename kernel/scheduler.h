@@ -23,6 +23,8 @@ class Schedueler : public lib::Singleton<Schedueler> {
   void Sleep(Channel* channel, SpinLock* lk = nullptr);
   void Wakeup(Channel* channel);
   void Exit();
+  void SetInitProcess(const ProcessTask* process);
+  const ProcessTask* GetInitProcess();
   ProcessTask* FindFirslChild(const ProcessTask* parent);
   void ClockInterrupt();
   inline __attribute__((always_inline)) uint64_t SystemTick() {
@@ -42,6 +44,7 @@ class Schedueler : public lib::Singleton<Schedueler> {
   CpuTask cpu_task_[system_param::CPU_NUM];
   SchedulerInfo scheduler_info_;
   volatile uint64_t ticks = 0;
+  const ProcessTask* init_process_;
 };
 
 }  // namespace kernel

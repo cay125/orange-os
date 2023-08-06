@@ -148,6 +148,7 @@ void ExcuteInitProcess(char* code, size_t size) {
   ProcessTask* process = Schedueler::Instance()->AllocProc();
   ExecuteImpl(&stringstream, process);
   process->state = ProcessState::runnable;
+  Schedueler::Instance()->SetInitProcess(process);
 }
 
 }  // namespace kernel

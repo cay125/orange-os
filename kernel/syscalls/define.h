@@ -29,6 +29,7 @@ int sys_mknod();
 int sys_getpid();
 int sys_exit();
 int sys_wait();
+int sys_getcwd();
 
 }  // namespace syscall
 }  // namespace kernel

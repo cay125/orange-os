@@ -5,8 +5,10 @@
 
 char buffer[200000] = {0};
 
+// argv[1]: binary name
+// argv[2]: output file name
 int main(int argc, char* argv[]) {
-  if (argc < 2) {
+  if (argc < 3) {
     return -1;
   }
   std::ifstream f(argv[1], std::ios::binary);
@@ -40,7 +42,7 @@ int main(int argc, char* argv[]) {
   *p++ = '}';
   *p++ = ';';
   sprintf(p, "\nlong initcode_size = %ld;\n", s.length());
-  std::ofstream out("initcode.cc");
+  std::ofstream out(std::string(argv[2]) + ".cc");
   out << buffer;
   return 0;
 }

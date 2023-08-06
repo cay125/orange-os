@@ -13,5 +13,6 @@
 #define SYSCALL_mknod       9
 #define SYSCALL_getpid     10
 #define SYSCALL_wait       11
+#define SYSCALL_getcwd     12
 
 #endif

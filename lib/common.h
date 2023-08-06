@@ -11,6 +11,8 @@ inline __attribute__((always_inline)) std::underlying_type_t<T> literal(T n) {
   return static_cast<std::underlying_type_t<T>>(n);
 }
 
+int SplitString(const char* str, char vec[][32], char dim);
+
 }  // namespace common
 }  // namespace lib
 
