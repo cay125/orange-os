@@ -128,6 +128,10 @@ int sys_read() {
 int sys_exec() {
   ProcessTask* process = Schedueler::Instance()->ThisProcess();
   auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
+  char** argv = reinterpret_cast<char**>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(1)));
+  if (!argv) {
+    return -1;
+  }
   fs::InodeDef inode{};
   auto inode_index = fs::Open(path_name, &inode);
   if (inode_index < 0) {
@@ -152,10 +156,30 @@ int sys_exec() {
     tmp_process_task->FreePageTable(false);
     return -1;
   }
+  auto user_sp_begin = reinterpret_cast<uint64_t>(tmp_process_task->user_sp) + memory_layout::PGSIZE;
+  uint64_t user_sp = user_sp_begin;
+  uint64_t argv_addr[17];
+  int argc = 0;
+  for (argc = 0; ; argc++) {
+    if (!argv[argc]) {
+      user_sp -= (argc + 1) * 8;
+      user_sp -= user_sp % 16;
+      argv_addr[argc] = 0;
+      break;
+    }
+    const char* str = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, reinterpret_cast<uint64_t>(argv[argc])));
+    user_sp -= strlen(str) + 1;
+    user_sp -= user_sp % 16;
+    argv_addr[argc] = tmp_process_task->frame->sp - (user_sp_begin - user_sp);
+    std::copy(str, str + strlen(str) + 1, reinterpret_cast<char*>(user_sp));
+  }
+  std::copy(argv_addr, argv_addr + argc + 1, reinterpret_cast<uint64_t*>(user_sp));
+  tmp_process_task->frame->sp -= user_sp_begin - user_sp;
+  tmp_process_task->frame->a1 = tmp_process_task->frame->sp;
   process->FreePageTable(false);
   process->CopyMemoryFrom(tmp_process_task);
   VirtualMemory::Instance()->FreePage(new_page);
-  return 0;
+  return argc;
 }
 
 int sys_sleep() {

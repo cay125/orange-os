@@ -26,16 +26,27 @@ int main(void) {
     syscall::getcwd(buf, 128);
     printf("\033[34;1m%s\033[32;1m$\033[0m ", buf);
     int n = syscall::read(console, buf, 128);
-    buf[n - 1] = '\0';
+    if (buf[n - 1] == '\n') {
+      buf[n - 1] = '\0';
+    }
     char split_ret[16][32];
-    lib::common::SplitString(buf, split_ret, ' ');
+    int token_num = lib::common::SplitString(buf, split_ret, ' ');
+    if (token_num < 0) {
+      printf(PrintLevel::error, "sh: command argument to mush\n");
+      continue;
+    }
+    char* argv[16 + 1];
+    for (int i = 0; i < token_num; ++i) {
+      argv[i] = split_ret[i];
+    }
+    argv[token_num] = nullptr;
     int sub_process = syscall::fork();
     if (sub_process < 0) {
       printf("trying to create a new process failed\n");
       continue;
     }
     if (sub_process == 0) {
-      syscall::exec(split_ret[0]);
+      syscall::exec(split_ret[0], argv);
       printf("%s: command not found\n", split_ret[0]);
       syscall::exit();
     }

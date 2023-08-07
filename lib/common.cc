@@ -9,7 +9,6 @@ namespace common {
 int SplitString(const char* str, char vec[][32], char dim) {
   int split_level = 0;
   const int max_level = 16;
-  const char* paths[max_level] = {nullptr};
   while (true) {
     while (*str && *str == dim) {
       ++str;
@@ -20,18 +19,16 @@ int SplitString(const char* str, char vec[][32], char dim) {
     if (split_level == max_level) {
       return -1;
     }
-    paths[split_level++] = str;
+    const char* pos = str;
     while (*str && *str != dim) {
       ++str;
     }
-  }
-  for (auto i = 0; i < split_level; i++) {
-    size_t len = (i < (split_level - 1)) ? paths[i + 1] - paths[i] : strlen(paths[i]);
-    if (len >= 32) {
+    if ((str - pos + 1) > 32) {
       return -1;
     }
-    std::copy(paths[i], paths[i] + len, vec[i]);
-    vec[i][len] = '\0';
+    std::copy(pos, str, vec[split_level]);
+    vec[split_level][str - pos] = '\0';
+    split_level += 1;
   }
   return split_level;
 }

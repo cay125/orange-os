@@ -6,7 +6,8 @@ int main(void) {
     printf("\033[35;1minit: starting sh\033[0m\n");
     int sh_pid = syscall::fork();
     if (sh_pid == 0) {
-      syscall::exec("sh");
+      const char* args[] = {"sh"};
+      syscall::exec("sh", args);
       printf("trying to exec sh faild\n");
       syscall::exit();
     }

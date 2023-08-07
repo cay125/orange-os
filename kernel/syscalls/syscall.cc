@@ -8,8 +8,8 @@
 namespace kernel {
 
 void ProcessSystemCall() {
-  RegFrame* frame = Schedueler::Instance()->ThisProcess()->frame;
-  frame->a0 = syscall::Manager::Instance()->DoWork(frame->a7);
+  ProcessTask* process = Schedueler::Instance()->ThisProcess();
+  process->frame->a0 = syscall::Manager::Instance()->DoWork(process->frame->a7);
 }
 
 }

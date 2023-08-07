@@ -6,6 +6,7 @@
 .globl _start
 _start:
   la a0, init
+  la a1, argv
   li a7, SYSCALL_exec
   ecall
 
@@ -16,3 +17,8 @@ exit:
 
 init:
   .string "/init\0"
+
+.p2align 2
+argv:
+  .long init
+  .long 0
