@@ -14,6 +14,11 @@ generate_asm(init)
 target_link_libraries(init startup lib syscall_interface)
 target_link_options(init PRIVATE ${user_program_link_option})
 
+add_executable(pwd pwd.cc)
+generate_asm(pwd)
+target_link_libraries(pwd startup lib syscall_interface)
+target_link_options(pwd PRIVATE ${user_program_link_option})
+
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)
 target_link_options(init_loader PRIVATE ${user_program_link_option})

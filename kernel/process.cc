@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <span>
 
 #include "lib/string.h"
 #include "kernel/lock/critical_guard.h"
@@ -101,6 +102,46 @@ void ProcessTask::CopyMemoryFrom(const ProcessTask* process) {
   used_address_size = process->used_address_size;
   used_address = process->used_address;
   user_sp = process->user_sp;
+}
+
+static bool CopyMemory(uint64_t* src_root_page,
+                       uint64_t* dst_root_page,
+                       const std::span<const MemoryRegion>& region,
+                       size_t used_address_size) {
+  for (size_t i = 0; i < used_address_size; ++i) {
+    riscv::PTE pte = riscv::PTE::None;
+    uint64_t va_beg = region[i].first, va_end = region[i].second;
+    auto size = va_end - va_beg;
+    while (size > 0) {
+      uint64_t src_pa = VirtualMemory::Instance()->VAToPA(src_root_page, va_beg, &pte);
+      uint64_t remain_size = memory_layout::PGSIZE - src_pa % memory_layout::PGSIZE;
+      size_t len = size > remain_size ? remain_size : size;
+      if (!VirtualMemory::Instance()->MapMemory(dst_root_page, va_beg, va_beg + len, pte)) {
+        return false;
+      }
+      uint64_t dst_pa = VirtualMemory::Instance()->VAToPA(dst_root_page, va_beg);
+      memcpy(reinterpret_cast<uint8_t*>(dst_pa), reinterpret_cast<uint8_t*>(src_pa), len);
+      size -= len;
+      va_beg = VirtualMemory::AddrCastDown(va_beg) + memory_layout::PGSIZE;
+    }
+  }
+  return true;
+}
+
+bool ProcessTask::CopyFrom(const ProcessTask* src_process) {
+  if (!CopyMemory(src_process->page_table, page_table, src_process->used_address, src_process->used_address_size)) {
+    return false;
+  }
+  std::copy(src_process->used_address.begin(), src_process->used_address.begin() + src_process->used_address_size, used_address.begin());
+  used_address_size = src_process->used_address_size;
+
+  memcpy(user_sp, src_process->user_sp, memory_layout::PGSIZE);
+
+  // prepare trapframe
+  memcpy(frame, src_process->frame, sizeof(*frame));
+  frame->kernel_sp = reinterpret_cast<uint64_t>(kernel_sp) + memory_layout::PGSIZE;
+  memcpy(current_path, src_process->current_path, strlen(src_process->current_path));
+  return true;
 }
 
 }  // namespace kernel
