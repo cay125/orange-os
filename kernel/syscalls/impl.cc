@@ -13,6 +13,7 @@
 #include "kernel/lock/critical_guard.h"
 #include "kernel/resource_factory.h"
 #include "kernel/scheduler.h"
+#include "kernel/return_code/syscall_err.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
 #include "kernel/utils.h"
@@ -280,6 +281,26 @@ int sys_getcwd() {
   }
   std::copy(process->current_path, process->current_path + path_len, addr);
   addr[path_len] = '\0';
+  return 0;
+}
+
+int sys_chdir() {
+  auto* process = Schedueler::Instance()->ThisProcess();
+  auto* path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
+  fs::InodeDef inode{};
+  auto inode_index = fs::Open(path_name, &inode);
+  if (inode_index < 0) {
+    return return_code::no_such_file_or_directory;
+  }
+  if (inode.type != fs::FileType::directory) {
+    return return_code::not_a_directory;
+  }
+  auto path_len = strlen(path_name);
+  if (path_name[0] != '/') {
+    std::copy(path_name, path_name + path_len + 1, process->current_path + strlen(process->current_path));
+  } else {
+    std::copy(path_name, path_name + path_len + 1, process->current_path);
+  }
   return 0;
 }
 

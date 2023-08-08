@@ -30,6 +30,7 @@ int sys_getpid();
 int sys_exit();
 int sys_wait();
 int sys_getcwd();
+int sys_chdir();
 
 }  // namespace syscall
 }  // namespace kernel

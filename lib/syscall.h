@@ -17,6 +17,7 @@ int getpid();
 int exit();
 int wait();
 int getcwd(char* buf, size_t max_len);
+int chdir(const char*);
 
 }  // namespace syscall
 

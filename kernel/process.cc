@@ -28,7 +28,8 @@ void ProcessManager::ResetProcess(ProcessTask* process) {
   memset(&process->saved_context, 0, sizeof(process->saved_context));
   process->parent_process = nullptr;
   std::fill(process->current_path, process->current_path + strlen(process->current_path), 0);
-  process->current_path[0] = '/';
+  const char* root_path = "/";
+  std::copy(root_path, root_path + strlen(root_path) + 1, process->current_path);
   process->channel = nullptr;
   for (size_t i = 0; i < process->file_descriptor.size(); i++) {
     process->file_descriptor[i].file_type = fs::FileType::none;

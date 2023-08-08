@@ -104,7 +104,7 @@ int ParsePath(const char* path_name, char out_paths[][fs::MAX_FILE_NAME_LEN]) {
   }
   if (path_name[0] != '/') {
     int level = ParsePathImpl(kernel::Schedueler::Instance()->ThisProcess()->current_path, out_paths);
-    return ParsePathImpl(path_name, out_paths + level, true);
+    return ParsePathImpl(path_name, out_paths + level, true) + level;
   } else {
     return ParsePathImpl(path_name, out_paths);
   }

@@ -1,8 +1,10 @@
 #include "lib/common.h"
 #include "lib/lib.h"
+#include "lib/string.h"
 #include "lib/syscall.h"
 #include "filesystem/inode_def.h"
 #include "kernel/resource.h"
+#include "kernel/return_code/syscall_err.h"
 
 int main(void) {
   const char* console_path = "/dev/console";
@@ -40,6 +42,24 @@ int main(void) {
       argv[i] = split_ret[i];
     }
     argv[token_num] = nullptr;
+    if (strcmp(argv[0], "cd") == 0) {
+      if (token_num > 2) {
+        printf("cd: too many arguments\n");
+        continue;
+      }
+      int cd_ret;
+      if (token_num == 1) {
+        cd_ret = syscall::chdir("/");
+      } else {
+        cd_ret = syscall::chdir(argv[1]);
+      }
+      if (cd_ret == return_code::no_such_file_or_directory) {
+        printf("sh: cd: %s: No such file or directory\n", argv[1]);
+      } else if (cd_ret == return_code::not_a_directory) {
+        printf("sh: cd: %s: Not a directory\n", argv[1]);
+      }
+      continue;
+    }
     int sub_process = syscall::fork();
     if (sub_process < 0) {
       printf("trying to create a new process failed\n");
