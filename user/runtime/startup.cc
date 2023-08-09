@@ -22,9 +22,9 @@ void _start(int argc, char** argv) {
   std::for_each(__init_array_start,
                 __init_array_end,
                 [](function_t fp) { fp(); });
-  main(argc, argv);
+  int exit_code = main(argc, argv);
   std::for_each(__fini_array_start,
                 __fini_array_end,
                 [](function_t fp) { fp(); });
-  syscall::exit();
+  syscall::exit(exit_code);
 }

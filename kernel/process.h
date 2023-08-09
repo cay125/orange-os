@@ -69,6 +69,7 @@ struct ProcessTask {
   std::array<fs::FileDescriptor, 16> file_descriptor;
   char current_path[128] = "/";
   Channel owned_channel;
+  int exit_code = 0;
   bool Init(bool need_init_kernel_info = true);
   void FreePageTable(bool need_free_kernel_page = true);
   void CopyMemoryFrom(const ProcessTask* process);

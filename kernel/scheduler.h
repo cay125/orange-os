@@ -22,7 +22,7 @@ class Schedueler : public lib::Singleton<Schedueler> {
   void Yield();
   void Sleep(Channel* channel, SpinLock* lk = nullptr);
   void Wakeup(Channel* channel);
-  void Exit();
+  void Exit(int code);
   void SetInitProcess(const ProcessTask* process);
   const ProcessTask* GetInitProcess();
   ProcessTask* FindFirslChild(const ProcessTask* parent);

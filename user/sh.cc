@@ -14,7 +14,7 @@ int main(void) {
     int mknod_ret = syscall::mknod(console_path, kernel::resource_id::console_major, kernel::resource_id::console_minor);
     if (mknod_ret < 0) {
       printf(PrintLevel::error, "sh: mount %s failed, program will exit right now\n", console_path);
-      syscall::exit();
+      return -1;
     }
     printf(PrintLevel::info, "sh: mount %s succ\n", console_path);
     console = syscall::open("/dev/console");
@@ -68,10 +68,10 @@ int main(void) {
     if (sub_process == 0) {
       syscall::exec(split_ret[0], argv);
       printf("%s: command not found\n", split_ret[0]);
-      syscall::exit();
+      return -1;
     }
     syscall::wait();
   }
   // never reach
-  syscall::exit();
+  return 0;
 }

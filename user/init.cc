@@ -9,7 +9,7 @@ int main(void) {
       const char* args[] = {"sh"};
       syscall::exec("sh", args);
       printf("trying to exec sh faild\n");
-      syscall::exit();
+      return -1;
     }
     while (true) {
       int exit_pid = syscall::wait();

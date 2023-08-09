@@ -26,9 +26,10 @@ void Schedueler::Yield() {
            &current_cpu->saved_context);
 }
 
-void Schedueler::Exit() {
+void Schedueler::Exit(int code) {
   auto* process = ThisProcess();
   CriticalGuard guard(&process->lock);
+  process->exit_code = code;
   process->state = ProcessState::zombie;
   Wakeup(&process->owned_channel);
   Switch(&process->saved_context,

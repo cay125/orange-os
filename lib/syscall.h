@@ -14,8 +14,8 @@ int exec(const char* path, const char** argv);
 int exec(const char* path, char** argv);
 int mknod(const char* path, uint8_t major, uint8_t minor);
 int getpid();
-int exit();
-int wait();
+int exit(int);
+int wait(int* exit = nullptr);
 int getcwd(char* buf, size_t max_len);
 int chdir(const char*);
 

@@ -214,7 +214,8 @@ int sys_getpid() {
 }
 
 int sys_exit() {
-  Schedueler::Instance()->Exit();
+  int exit_code = comm::GetIntArg(0);
+  Schedueler::Instance()->Exit(exit_code);
   return 0;
 }
 
@@ -228,6 +229,10 @@ int sys_wait() {
     CriticalGuard guard(&child->lock);
     if (child->state == ProcessState::zombie) {
       int pid = child->pid;
+      if (comm::GetRawArg(0)) {
+        auto addr = reinterpret_cast<int*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
+        *addr = child->exit_code;
+      }
       ProcessManager::ResetProcess(child);
       return pid;
     }
