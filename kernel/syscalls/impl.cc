@@ -188,8 +188,12 @@ int sys_fstat() {
   if (!fd) {
     return -1;
   }
+  uint64_t addr = comm::GetRawArg(1);
+  if (!addr) {
+    return -1;
+  }
   auto* root_page = Schedueler::Instance()->ThisProcess()->page_table;
-  auto f_stat = reinterpret_cast<fs::FileState*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1)));
+  auto f_stat = reinterpret_cast<fs::FileState*>(VirtualMemory::Instance()->VAToPA(root_page, addr));
   f_stat->inode_index = fd->inode_index;
   f_stat->link_count = fd->inode.link_count;
   f_stat->size = fd->inode.size;
