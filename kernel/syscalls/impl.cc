@@ -226,12 +226,14 @@ int sys_exit() {
 int sys_wait() {
   auto* process = Schedueler::Instance()->ThisProcess();
   while (true) {
-    auto* child = Schedueler::Instance()->FindFirslChild(process);
-    if (!child) {
+    bool has_child;
+    ProcessTask* child;
+    std::tie(has_child, child) = Schedueler::Instance()->FindFirslZombieChild(process);
+    if (!has_child) {
       return -1;
     }
-    CriticalGuard guard(&child->lock);
-    if (child->state == ProcessState::zombie) {
+    if (child) {
+      CriticalGuard guard(&child->lock);
       int pid = child->pid;
       if (comm::GetRawArg(0)) {
         auto addr = reinterpret_cast<int*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
@@ -240,7 +242,7 @@ int sys_wait() {
       ProcessManager::ResetProcess(child);
       return pid;
     }
-    Schedueler::Instance()->Sleep(&child->owned_channel, &child->lock);
+    Schedueler::Instance()->Sleep(&process->owned_channel);
   }
   return 0;
 }

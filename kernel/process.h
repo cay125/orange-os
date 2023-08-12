@@ -43,7 +43,7 @@ using MemoryRegion = std::pair<uint64_t, uint64_t>;
 class Channel {
  public:
   Channel(const void* ptr) : data_(ptr) {}
-  bool operator==(const Channel& ch) {
+  bool operator==(const Channel& ch) const {
     return ch.data_ == this->data_;
   }
 
@@ -64,8 +64,8 @@ struct ProcessTask {
   uint64_t* user_sp = nullptr;
   ProcessState state = ProcessState::unused;
   SavedContext saved_context;
-  ProcessTask* parent_process = nullptr;
-  Channel* channel = nullptr;
+  const ProcessTask* parent_process = nullptr;
+  const Channel* channel = nullptr;
   std::array<fs::FileDescriptor, 16> file_descriptor;
   char current_path[128] = "/";
   Channel owned_channel;

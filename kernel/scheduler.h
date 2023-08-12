@@ -20,12 +20,12 @@ class Schedueler : public lib::Singleton<Schedueler> {
  public:
   friend class lib::Singleton<Schedueler>;
   void Yield();
-  void Sleep(Channel* channel, SpinLock* lk = nullptr);
-  void Wakeup(Channel* channel);
+  void Sleep(const Channel* channel, SpinLock* lk = nullptr);
+  void Wakeup(const Channel* channel);
   void Exit(int code);
   void SetInitProcess(const ProcessTask* process);
   const ProcessTask* GetInitProcess();
-  ProcessTask* FindFirslChild(const ProcessTask* parent);
+  std::tuple<bool, ProcessTask*> FindFirslZombieChild(const ProcessTask* parent);
   void ClockInterrupt();
   inline __attribute__((always_inline)) uint64_t SystemTick() {
     return ticks;

@@ -1,5 +1,7 @@
 #include "kernel/scheduler.h"
 
+#include <tuple>
+
 #include "kernel/config/memory_layout.h"
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
@@ -31,7 +33,16 @@ void Schedueler::Exit(int code) {
   CriticalGuard guard(&process->lock);
   process->exit_code = code;
   process->state = ProcessState::zombie;
-  Wakeup(&process->owned_channel);
+  for (auto& task : process_tasks_) {
+    if (task.parent_process == process) {
+      auto* init_process = GetInitProcess();
+      if (!init_process) {
+        kernel::panic("Cannot find init process");
+      }
+      task.parent_process = init_process;
+    }
+  }
+  Wakeup(&process->parent_process->owned_channel);
   Switch(&process->saved_context,
          &ThisCpu()->saved_context);
 }
@@ -52,7 +63,7 @@ void Schedueler::InitTimer() {
   riscv::regs::mie.set_bit(riscv::MIE::MTIE);
 }
 
-void Schedueler::Sleep(Channel* channel, SpinLock* lk) {
+void Schedueler::Sleep(const Channel* channel, SpinLock* lk) {
   CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
   if (!current_cpu->process_task ||
       current_cpu->process_task->state != ProcessState::running) {
@@ -74,7 +85,7 @@ void Schedueler::Sleep(Channel* channel, SpinLock* lk) {
   }
 }
 
-void Schedueler::Wakeup(Channel* channel) {
+void Schedueler::Wakeup(const Channel* channel) {
   for (auto& task : process_tasks_) {
     CriticalGuard guard(&task.lock);
     if (task.state == ProcessState::sleep && (*task.channel) == (*channel)) {
@@ -84,13 +95,17 @@ void Schedueler::Wakeup(Channel* channel) {
   }
 }
 
-ProcessTask* Schedueler::FindFirslChild(const ProcessTask* parent){
+std::tuple<bool, ProcessTask*> Schedueler::FindFirslZombieChild(const ProcessTask* parent){
+  bool has_child = false;
   for (auto& task : process_tasks_) {
     if (task.parent_process == parent) {
-      return &task;
+      has_child = true;
+      if (task.state == ProcessState::zombie) {
+        return {true, &task};
+      }
     }
   }
-  return nullptr;
+  return {has_child, nullptr};
 }
 
 void Schedueler::ClockInterrupt() {
