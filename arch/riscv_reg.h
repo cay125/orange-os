@@ -101,6 +101,15 @@ struct mhartid_op {
   }
 };
 
+struct mtval_op {
+  static uint64_t read() {
+    uint64_t v = 0;
+    asm volatile ("csrr %0, mtval" : "=r" (v));
+    return v;
+  }
+};
+
+
 template <class OP>
 class ReadOnlyReg {
  public:
@@ -346,6 +355,7 @@ using mepc = GeneralReg<mepc_op>;
 using mstatus = MstatusImpl;
 using mscratch = GeneralReg<mscratch_op>;
 using mcause = McauseImpl;
+using mtval = ReadOnlyReg<mtval_op>;
 using mhartid = ReadOnlyReg<mhartid_op>;
 using mie = MieImpl;
 
@@ -368,6 +378,7 @@ namespace regs {
   inline details::mstatus mstatus;
   inline details::mscratch mscratch;
   inline details::mcause mcause;
+  inline details::mtval mtval;
   inline details::mhartid mhartid;
   inline details::mie mie;
 

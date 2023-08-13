@@ -2,23 +2,36 @@
 
 #include "arch/riscv_reg.h"
 #include "kernel/extern_controller.h"
-#include "kernel/syscalls/syscall.h"
-#include "kernel/utils.h"
+#include "kernel/printf.h"
 #include "kernel/scheduler.h"
 #include "kernel/syscalls/define.h"
+#include "kernel/syscalls/syscall.h"
+#include "kernel/utils.h"
+#include "kernel/virtual_memory.h"
 #include "lib/common.h"
 
 namespace kernel {
 
 void ProcessException() {
-  riscv::Exception e_code = Schedueler::Instance()->ThisProcess()->frame->exception();
+  ProcessTask* process = Schedueler::Instance()->ThisProcess();
+  riscv::Exception e_code = process->frame->exception();
   switch (e_code) {
   case riscv::Exception::environment_call_from_u_mode:
     global_interrunpt_on();
-    Schedueler::Instance()->ThisProcess()->frame->mepc += 4;
+    process->frame->mepc += 4;
     ProcessSystemCall();
     break;
   
+  case riscv::Exception::store_page_fault:
+  case riscv::Exception::load_page_fault:
+    if (process->frame->sp < (VirtualMemory::GetUserSpVa() - memory_layout::PGSIZE)) {
+      printf("Stack overflow: %p vs %p\n", process->frame->sp, VirtualMemory::GetUserSpVa() - memory_layout::PGSIZE);
+    } else {
+      printf("Segment fault, trying to %s invalid addr: 0x%p\n", e_code == riscv::Exception::store_page_fault ? "write" : "read", riscv::regs::mtval.read());
+    }
+    Schedueler::Instance()->Exit(-1);
+    break;
+
   default:
     panic("Unexpted exception code: %d", lib::common::literal(e_code));
     break;
