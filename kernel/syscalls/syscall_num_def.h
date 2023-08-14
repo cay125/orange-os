@@ -15,5 +15,7 @@
 #define SYSCALL_wait       11
 #define SYSCALL_getcwd     12
 #define SYSCALL_chdir      13
+#define SYSCALL_mkdir      14
+#define SYSCALL_sbrk       15
 
 #endif

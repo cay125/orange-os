@@ -18,6 +18,8 @@ int exit(int);
 int wait(int* exit = nullptr);
 int getcwd(char* buf, size_t max_len);
 int chdir(const char*);
+int mkdir(const char*);
+char* sbrk(uint32_t);
 
 }  // namespace syscall
 

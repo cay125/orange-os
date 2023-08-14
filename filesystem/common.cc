@@ -119,7 +119,7 @@ ssize_t OpenImpl(const char paths[][fs::MAX_FILE_NAME_LEN], int path_level, Inod
   for (int i = 0; i < path_level; ++i) {
     InodeDef inode{};
     GetInode(current_inode_index, &inode);
-    if (i != (path_level - 1) && inode.type != fs::FileType::directory) {
+    if (inode.type != fs::FileType::directory) {
       return -1;
     }
     int inum = IteratorDir(&inode, device, paths[i]);
@@ -283,7 +283,10 @@ bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) 
       entry_inode = create_ret.second;
     } else {
       if (i == (path_level - 1)) {
-        kernel::printf("Warning: Target File: \"%s\" exists\n", path_name);
+        kernel::printf("Warning: Target File: \"%s\" exists, type: %s, size: %d\n", path_name, FileTypeName(inode.type), inode.size);
+        if (inode.type != type) {
+          return false;
+        }
       }
       entry_inode = open_ret;
     }

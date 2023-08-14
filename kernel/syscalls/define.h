@@ -31,6 +31,8 @@ int sys_exit();
 int sys_wait();
 int sys_getcwd();
 int sys_chdir();
+int sys_mkdir();
+int sys_sbrk();
 
 }  // namespace syscall
 }  // namespace kernel

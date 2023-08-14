@@ -262,7 +262,7 @@ int sys_getcwd() {
 
 int sys_chdir() {
   auto* process = Schedueler::Instance()->ThisProcess();
-  auto* path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
+  const char* path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(process->page_table, comm::GetRawArg(0)));
   fs::InodeDef inode{};
   auto inode_index = fs::Open(path_name, &inode);
   if (inode_index < 0) {
@@ -273,11 +273,53 @@ int sys_chdir() {
   }
   auto path_len = strlen(path_name);
   if (path_name[0] != '/') {
+    auto cur_path_len = strlen(process->current_path);
+    if (process->current_path[cur_path_len - 1] != '/') {
+      process->current_path[cur_path_len] = '/';
+      process->current_path[cur_path_len + 1] = '\0';
+    }
     std::copy(path_name, path_name + path_len + 1, process->current_path + strlen(process->current_path));
   } else {
     std::copy(path_name, path_name + path_len + 1, process->current_path);
   }
+  // remove last '/'
+  auto cur_path_len = strlen(process->current_path);
+  if (cur_path_len > 1 && process->current_path[cur_path_len - 1] == '/') {
+    process->current_path[cur_path_len - 1] = '\0';
+  }
   return 0;
+}
+
+int sys_mkdir() {
+  auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
+  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
+  bool ret = fs::Create(path_name, fs::FileType::directory, 0, 0);
+  if (!ret) {
+    return -1;
+  }
+  return 0;
+}
+
+int sys_sbrk() {
+  auto* process = Schedueler::Instance()->ThisProcess();
+  uint32_t bytes = comm::GetIntegralArg<uint32_t>(0);
+  if (bytes == 0) {
+    return 0;
+  }
+  uint64_t max_mem_addr = 0;
+  for (size_t i = 0; i < process->used_address_size; i++) {
+    if (process->used_address[i].second > max_mem_addr) {
+      max_mem_addr = process->used_address[i].second;
+    }
+  }
+  max_mem_addr = VirtualMemory::AddrCastUp(max_mem_addr);
+  bool ret = VirtualMemory::Instance()->MapMemory(process->page_table, max_mem_addr, max_mem_addr + bytes, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U);
+  if (!ret) {
+    return 0;
+  }
+  process->used_address[process->used_address_size] = {max_mem_addr, max_mem_addr + bytes};
+  process->used_address_size += 1;
+  return max_mem_addr;
 }
 
 }  // namespace syscall

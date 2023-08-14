@@ -15,6 +15,7 @@ add_library(filesystem STATIC
             filestream.cc filestream.h
             common.cc common.h
 )
+target_link_libraries(filesystem fs_utils)
 
 add_library(fs_utils STATIC
             inode_def.h inode_def.cc
