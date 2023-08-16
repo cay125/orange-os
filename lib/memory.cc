@@ -131,10 +131,14 @@ void* malloc(uint32_t bytes) {
 }
 
 void free(void* addr) {
+  if (!addr) {
+    printf(PrintLevel::error, "free: not a valid addr: 0\n");
+    syscall::exit(-1);
+  }
   auto* header = reinterpret_cast<Header*>(addr) - 1;
   // determine whether block is produced by malloc
   if (header->meta.data != addr || !header->meta.size) {
-    printf(PrintLevel::error, "free: not a valid addr\n");
+    printf(PrintLevel::error, "free: not a valid addr: 0x%p\n", addr);
     syscall::exit(-1);
   }
   MemManager::Instance()->FreeBlock(header);
