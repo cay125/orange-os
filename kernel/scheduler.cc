@@ -2,7 +2,9 @@
 
 #include <tuple>
 
+#include "arch/riscv_reg.h"
 #include "kernel/config/memory_layout.h"
+#include "kernel/config/system_param.h"
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/utils.h"
@@ -11,11 +13,9 @@
 
 extern "C" void Switch(kernel::SavedContext* c1, kernel::SavedContext* c2);
 
-namespace kernel {
+uint64_t time_scratch[2];
 
-const SchedulerInfo* Schedueler::scheduler_info() {
-  return &scheduler_info_;
-}
+namespace kernel {
 
 void Schedueler::Yield() {
   CpuTask* current_cpu = &cpu_task_[riscv::regs::mhartid.read()];
@@ -55,11 +55,12 @@ const ProcessTask* Schedueler::GetInitProcess() {
 }
 
 void Schedueler::InitTimer() {
-  uint64_t mtime_cmp = memory_layout::CLINT_MTIMECMP(riscv::regs::mhartid.read());
+  uint64_t hart_id = riscv::regs::mhartid.read();
+  uint64_t mtime_cmp = memory_layout::CLINT_MTIMECMP(hart_id);
   uint64_t current_mtime = MEMORY_MAPPED_IO_R_DWORD(memory_layout::CLINT_MTIME);
   MEMORY_MAPPED_IO_W_DWORD(mtime_cmp, current_mtime + system_param::TIMER_INTERVAL);
-  scheduler_info_.mtime_cmp_addr = mtime_cmp;
-  scheduler_info_.interval = system_param::TIMER_INTERVAL;
+  time_scratch[0] = mtime_cmp;
+  time_scratch[1] = system_param::TIMER_INTERVAL;
   riscv::regs::mie.set_bit(riscv::MIE::MTIE);
 }
 

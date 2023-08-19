@@ -1,10 +1,12 @@
 #include <algorithm>
+#include <assert.h>
 #include <span>
 
 #include "lib/string.h"
 #include "kernel/lock/critical_guard.h"
 #include "kernel/printf.h"
 #include "kernel/process.h"
+#include "kernel/regs_frame.hpp"
 #include "kernel/scheduler.h"
 #include "kernel/sys_def/descriptor_def.h"
 #include "kernel/virtual_memory.h"
@@ -77,10 +79,10 @@ bool ProcessTask::Init(bool need_init_kernel_info) {
   }
   page_table = root_page_table;
   frame = reinterpret_cast<RegFrame*>(frame_page);
+  assert(sizeof(RegFrame) == 2048);
   user_sp = user_stack_page;
   frame->kernel_sp = (uint64_t)kernel_sp + memory_layout::PGSIZE;
   frame->sp = user_stack_page_va + memory_layout::PGSIZE;
-  frame->scheduler_info = Schedueler::Instance()->scheduler_info();
   if (file_descriptor[descriptor_def::io::console].file_type != fs::FileType::none) {
     printf("Error: fd in descriptor_def::io::console is not empty\n");
     return false;

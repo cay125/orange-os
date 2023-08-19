@@ -11,11 +11,6 @@ namespace kernel {
 
 class SpinLock;
 
-struct SchedulerInfo {
-  uint64_t mtime_cmp_addr;
-  uint64_t interval;
-};
-
 class Schedueler : public lib::Singleton<Schedueler> {
  public:
   friend class lib::Singleton<Schedueler>;
@@ -35,14 +30,12 @@ class Schedueler : public lib::Singleton<Schedueler> {
   void InitTimer();
   void Dispatch();
   ProcessTask* AllocProc();
-  const SchedulerInfo* scheduler_info();
 
  private:
   Schedueler() {}
 
   ProcessTask process_tasks_[system_param::MAX_PROCESS_NUM];
   CpuTask cpu_task_[system_param::CPU_NUM];
-  SchedulerInfo scheduler_info_;
   volatile uint64_t ticks = 0;
   const ProcessTask* init_process_;
 };

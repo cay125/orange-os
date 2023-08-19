@@ -1,5 +1,6 @@
 #include "kernel/trap.h"
 
+#include "arch/riscv_isa.h"
 #include "arch/riscv_reg.h"
 #include "kernel/extern_controller.h"
 #include "kernel/printf.h"
@@ -64,6 +65,9 @@ void ProcessUserTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::user_mode) {
     panic("Invalid privilege mode, expected: user_mode");
   }
+  if (riscv::regs::mstatus.read_bit(riscv::StatusBit::mie)) {
+    panic("Invalid mstatus mie bit, interrupt enabled");
+  }
   auto* process = Schedueler::Instance()->ThisProcess();
   if (process->frame->mcause & riscv::EXCEPTION_MASK) {
     ProcessInterrupt();
@@ -78,6 +82,9 @@ void ProcessUserTrap() {
 void ProcessKernelTrap() {
   if (riscv::regs::mstatus.read_mpp() != riscv::MPP::machine_mode) {
     panic("Invalid privilege mode, expected: machine_mode");
+  }
+  if (riscv::regs::mstatus.read_bit(riscv::StatusBit::mie)) {
+    panic("Invalid mstatus mie bit, interrupt enabled");
   }
   riscv::Interrupt i_code = riscv::regs::mcause.get_interrupt();
   if (i_code == riscv::Interrupt::m_timer) {

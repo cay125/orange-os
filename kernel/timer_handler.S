@@ -12,7 +12,7 @@ user_timer_handler:
   sd a3, TEMPORARY_SPACE_OFFSET + 2 * 8(a0)
   sd a4, TEMPORARY_SPACE_OFFSET + 3 * 8(a0)
 
-  ld a4, SCHEDULER_INFO_OFFSET(a0)
+  la a4, time_scratch
 
   # load mtime_cmp_addr
   ld a1, 0(a4)
@@ -44,7 +44,7 @@ kernel_timer_handler:
   sd a3, TEMPORARY_SPACE_OFFSET + 6 * 8(a0)
   sd a4, TEMPORARY_SPACE_OFFSET + 7 * 8(a0)
 
-  ld a4, SCHEDULER_INFO_OFFSET(a0)
+  la a4, time_scratch
 
   # load mtime_cmp_addr
   ld a1, 0(a4)

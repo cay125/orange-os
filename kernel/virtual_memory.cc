@@ -13,8 +13,6 @@ extern char memory_beg[];
 
 namespace kernel {
 
-extern SchedulerInfo scheduler_info;
-
 bool VirtualMemory::Init() {
   if (!has_init_) {
     has_init_ = true;
