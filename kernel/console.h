@@ -5,6 +5,10 @@
 #include "kernel/lock/spin_lock.h"
 #include "kernel/resource.h"
 
+namespace driver {
+class BasicDevice;
+}
+
 namespace kernel {
 
 class Console : Resource {
@@ -26,6 +30,7 @@ class Console : Resource {
     SpinLock lock{};
   };
   Context context;
+  driver::BasicDevice* device_ = nullptr;
 };
 
 }  // namespace kernel

@@ -9,6 +9,7 @@ class Uart : public BasicDevice {
   static void put_char(char c);
   bool Init(uint64_t addr) override;
   void ProcessInterrupt() override;
+  void Write(const char* buf, size_t size) override;
 
  private:
   uint64_t addr_;

@@ -1,6 +1,7 @@
 #include "filesystem/filestream.h"
 
 #include "driver/device_factory.h"
+#include "filesystem/common.h"
 #include "lib/string.h"
 
 namespace fs {
@@ -42,6 +43,11 @@ size_t FileStream::Read(char* buf, size_t size) {
     buf += len;
   }
   return size;
+}
+
+size_t FileStream::write(const char* buf, size_t size) {
+  auto write_cnt = Write(&inode_, buf, size, position_);
+  return write_cnt;
 }
 
 size_t FileStream::Size() const {

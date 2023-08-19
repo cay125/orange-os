@@ -1,5 +1,6 @@
 #include <algorithm>
 
+#include "driver/uart.h"
 #include "lib/types.h"
 #include "kernel/console.h"
 #include "kernel/global_channel.h"
@@ -10,7 +11,7 @@
 
 namespace kernel {
 
-Console::Console(driver::BasicDevice* device) {
+Console::Console(driver::BasicDevice* device) : device_(device) {
   device->RegisterInterruptCallback([](const char* str, size_t len){
     auto* resource = kernel::ResourceFactory::Instance()->GetResource(
       kernel::resource_id::console_major,
@@ -40,7 +41,11 @@ size_t Console::read(char* p, size_t len) {
 }
 
 size_t Console::write(char*p, size_t len) {
-  return 0;
+  if (!device_->IsWritable()) {
+    return 0;
+  }
+  device_->Write(p, len);
+  return len;
 }
 
 void Console::get_name(char* name) {

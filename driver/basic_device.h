@@ -12,8 +12,13 @@ class BasicDevice {
   virtual void RegisterInterruptCallback(void(*fun)(const char*, size_t len)) {
     interrupt_callback = fun;
   }
+  bool IsWritable() {
+    return is_writable_;
+  }
+  virtual void Write(const char* buf, size_t size) {}
 
- public:
+ protected:
+  bool is_writable_ = false;
   void(*interrupt_callback)(const char*, size_t len) = nullptr;
 };
 

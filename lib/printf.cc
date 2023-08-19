@@ -1,5 +1,6 @@
 #include "lib/lib.h"
 
+#include "kernel/sys_def/descriptor_def.h"
 #include "lib/printk.h"
 #include "lib/string.h"
 
@@ -10,7 +11,7 @@ void printf(const char *fmt, ...) {
 	char* p = out_str;
 	simple_vsprintf(&p, fmt, va, nullptr);
 	va_end(va);
-	syscall::write(1, out_str, strlen(out_str));
+	syscall::write(descriptor_def::io::console, out_str, strlen(out_str));
 }
 
 void printf(PrintLevel level, const char *fmt, ...) {
@@ -26,6 +27,6 @@ void printf(PrintLevel level, const char *fmt, ...) {
 	char* p = out_str;
 	simple_vsprintf(&p, fmt, va, nullptr);
 	va_end(va);
-	syscall::write(1, out_str, strlen(out_str));
+	syscall::write(descriptor_def::io::console, out_str, strlen(out_str));
   printf("%s", escape_sequences_end);
 }

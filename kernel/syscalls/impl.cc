@@ -12,7 +12,7 @@
 #include "kernel/lock/critical_guard.h"
 #include "kernel/resource_factory.h"
 #include "kernel/scheduler.h"
-#include "kernel/return_code/syscall_err.h"
+#include "kernel/sys_def/syscall_err.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
 #include "kernel/utils.h"
@@ -37,19 +37,6 @@ int sys_fork() {
   return dst_pro->pid;
 }
 
-int sys_write() {
-  int fd = comm::GetIntArg(0);
-  auto str = comm::GetAddrArg<char>(1);
-  int size = comm::GetIntArg(2);
-  auto root_pate = Schedueler::Instance()->ThisProcess()->page_table;
-  auto str_pa = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_pate, (uint64_t)str));
-  if (fd == 1) {
-    for (int i = 0; i < size; ++i) 
-      driver::Uart::put_char(str_pa[i]);
-  }
-  return 0;
-}
-
 static void GetFileDescriptor(int fd_index, fs::FileDescriptor** taregt_fd) {
   auto* cur_process = Schedueler::Instance()->ThisProcess();
   if (fd_index < 0 || (uint64_t)fd_index >= cur_process->file_descriptor.size()) {
@@ -62,15 +49,51 @@ static void GetFileDescriptor(int fd_index, fs::FileDescriptor** taregt_fd) {
   *taregt_fd = &fd;
 }
 
+int sys_write() {
+  fs::FileDescriptor* fd = nullptr;
+  GetFileDescriptor(comm::GetIntArg(0), &fd);
+  if (!fd) {
+    printf("sys_write: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
+    return -1;
+  }
+  auto* root_page = Schedueler::Instance()->ThisProcess()->page_table;
+  riscv::PTE pte = riscv::PTE::None;
+  auto buf = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1), &pte));
+  if (!buf || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
+    printf("sys_write: Trying to write from invalid memory\n");
+    return -1;
+  }
+  auto size = comm::GetIntegralArg<size_t>(2);
+  if (fd->file_type == fs::FileType::regular_file || fd->file_type == fs::FileType::directory) {
+    fs::FileStream file_stream(fd->inode);
+    file_stream.Seek(fd->offset);
+    size = file_stream.write(buf, size);
+    fd->offset += size;
+  } else if (fd->file_type == fs::FileType::device) {
+    auto* r = ResourceFactory::Instance()->GetResource(fd->inode.major, fd->inode.minor);
+    if (!r) {
+      return -1;
+    }
+    size = r->write(buf, size);
+  } else if (fd->file_type == fs::FileType::none) {
+    printf("sys_write: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
+    return -1;
+  }
+  return size;
+}
+
 int sys_read() {
   fs::FileDescriptor* fd = nullptr;
   GetFileDescriptor(comm::GetIntArg(0), &fd);
   if (!fd) {
+    printf("sys_read: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
   }
   auto* root_page = Schedueler::Instance()->ThisProcess()->page_table;
-  auto buf = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1)));
-  if (!buf) {
+  riscv::PTE pte = riscv::PTE::None;
+  auto buf = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1), &pte));
+  if (!buf || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
+    printf("sys_read: Trying to read data to invalid memory\n");
     return -1;
   }
   auto size = comm::GetIntegralArg<size_t>(2);
@@ -86,6 +109,7 @@ int sys_read() {
     }
     size = r->read(buf, size);
   } else if (fd->file_type == fs::FileType::none) {
+    printf("sys_read: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
   }
   return size;

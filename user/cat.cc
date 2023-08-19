@@ -1,4 +1,5 @@
 #include "filesystem/inode_def.h"
+#include "kernel/sys_def/descriptor_def.h"
 #include "lib/lib.h"
 #include "lib/syscall.h"
 
@@ -21,8 +22,9 @@ int main(int argc, char** argv) {
     int n;
     char buf[512];
     while ((n = syscall::read(fd, buf, sizeof(buf))) > 0) {
-      syscall::write(1, buf, n);
+      syscall::write(descriptor_def::io::console, buf, n);
     }
+    syscall::write(descriptor_def::io::console, reinterpret_cast<const char*>(0x0), 5);
     printf("\n");
   }
   return 0;

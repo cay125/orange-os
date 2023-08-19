@@ -71,6 +71,7 @@ int main(int argc, char* argv[]) {
   fs::InodeDef root_inode{};
   root_inode.type = fs::FileType::directory;
   root_inode.link_count = 1;
+  root_inode.inode_index = fs::ROOT_INODE;
 
   for (int i = 3; i < argc; ++i) {
     if ((cur_data_block - super_block.bmap_start) > super_block.datablocks_count) {
@@ -103,6 +104,7 @@ int main(int argc, char* argv[]) {
     inode.type = fs::FileType::regular_file;
     inode.size = file_size;
     inode.link_count = 1;
+    inode.inode_index = cur_inode_index;
 
     fs::DirElement dir_element{};
     std::copy(file_name.begin(), file_name.end(), dir_element.name);

@@ -43,7 +43,7 @@ const char* FileTypeName(FileType type);
 
 struct FileState {
   uint32_t inode_index;
-  uint16_t link_count;
+  uint8_t link_count;
   uint32_t size;
   FileType type;
 };
@@ -51,14 +51,14 @@ struct FileState {
 // disable struct align
 #pragma  pack(1)
 struct InodeDef {
+  uint32_t inode_index;
   FileType type;
-  uint16_t link_count;
+  uint8_t link_count;
   uint8_t major;
   uint8_t minor;
   uint32_t size;
   uint32_t addr[DIRECT_ADDR_SIZE];
   uint32_t indirect_addr;
-  uint8_t padding[64 - 61];
 };
 #pragma  pack()
 

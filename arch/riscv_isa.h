@@ -154,6 +154,12 @@ inline T1 operator & (T1 t1, T2 t2) {
   return t1 & static_cast<T1>(t2);
 }
 
+template <typename T, std::enable_if_t<std::is_enum_v<T>, bool> = true>
+inline std::underlying_type_t<T> operator & (T& t1, T t2) {
+  using V = std::underlying_type_t<T>;
+  return static_cast<V>(t1) & static_cast<V>(t2);
+}
+
 template <typename T1, typename T2, std::enable_if_t<std::is_integral_v<T1>, bool> = true, std::enable_if_t<std::is_enum_v<T2>, bool> = true>
 inline T1& operator &= (T1& t1, T2 t2) {
   t1 = t1 & static_cast<T1>(t2);

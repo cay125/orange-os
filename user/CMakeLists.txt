@@ -1,5 +1,7 @@
 include(${CMAKE_SOURCE_DIR}/functions.cmake)
 
+add_compile_options(-O)
+
 add_subdirectory(runtime)
 
 set(user_program_link_option -e _start -Ttext=0 -s)
@@ -34,6 +36,11 @@ add_executable(cat cat.cc)
 generate_asm(cat)
 target_link_libraries(cat ${user_program_link_target})
 target_link_options(cat PRIVATE ${user_program_link_option})
+
+add_executable(mkdir mkdir.cc)
+generate_asm(mkdir)
+target_link_libraries(mkdir ${user_program_link_target})
+target_link_options(mkdir PRIVATE ${user_program_link_option})
 
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)

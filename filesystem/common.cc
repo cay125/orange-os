@@ -202,30 +202,48 @@ std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const 
   if (inode.type != FileType::directory) {
     return {false, 0};
   }
-  auto* device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
-  uint32_t addr_index = inode.size / fs::BLOCK_SIZE;
-  uint32_t target_data_block_index = 0;
   auto new_inode_pair = AllocInode();
   if (!new_inode_pair.first) {
     return {false, 0};
   }
+  DirElement dir{};
+  dir.inum = new_inode_pair.second;
+  std::copy(name, name + strlen(name), dir.name);
+  Write(&inode, reinterpret_cast<const char*>(&dir), fs::DIR_ELEMENT_SIZE, inode.size);
+  InodeDef target_inode{};
+  target_inode.size = 0;
+  if (type == FileType::device) {
+    target_inode.major = major;
+    target_inode.minor = minor;
+  }
+  target_inode.inode_index = new_inode_pair.second;
+  target_inode.type = type;
+  target_inode.link_count = 1;
+  UpdateInode(new_inode_pair.second, &target_inode);
+  return {true, new_inode_pair.second};
+}
+
+bool WriteImpl(InodeDef* inode, const char* buf, size_t size, size_t pos) {
+  auto* device = reinterpret_cast<driver::virtio::Device*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::disk0));
+  uint32_t addr_index = pos / fs::BLOCK_SIZE;
+  uint32_t target_data_block_index = 0;
   if (addr_index < fs::DIRECT_ADDR_SIZE) {
-    if (!inode.addr[addr_index]) {
+    if (!inode->addr[addr_index]) {
       auto new_block = AllocDataBlock();
       if (!new_block.first) {
-        return {false, 0};
+        return false;
       }
-      inode.addr[addr_index] = new_block.second;
+      inode->addr[addr_index] = new_block.second;
     }
-    target_data_block_index = inode.addr[addr_index];
+    target_data_block_index = inode->addr[addr_index];
   } else {
-    if (!inode.indirect_addr) {
+    if (!inode->indirect_addr) {
       auto indirect_block_index = AllocDataBlock();
       auto data_block_index = AllocDataBlock();
       if (!indirect_block_index.first || !data_block_index.first) {
-        return {false, 0};
+        return false;
       }
-      inode.indirect_addr = indirect_block_index.second;
+      inode->indirect_addr = indirect_block_index.second;
       driver::virtio::MetaData meta_data{};
       meta_data.block_index = indirect_block_index.second;
       std::fill(meta_data.buf.begin(), meta_data.buf.end(), 0);
@@ -234,33 +252,49 @@ std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const 
       target_data_block_index = data_block_index.second;
     } else {
       driver::virtio::MetaData meta_data{};
-      meta_data.block_index = inode.indirect_addr;
+      meta_data.block_index = inode->indirect_addr;
       device->Operate(driver::virtio::Operation::read, &meta_data);
       target_data_block_index = reinterpret_cast<uint32_t*>(meta_data.buf.data())[addr_index - fs::DIRECT_ADDR_SIZE];
+      if (!target_data_block_index) {
+        auto new_block = AllocDataBlock();
+        if (!new_block.first) {
+          return false;
+        }
+        reinterpret_cast<uint32_t*>(meta_data.buf.data())[addr_index - fs::DIRECT_ADDR_SIZE] = new_block.second;
+        device->Operate(driver::virtio::Operation::write, &meta_data);
+        target_data_block_index = new_block.second;
+      }
     }
   }
-  auto remain = inode.size % fs::BLOCK_SIZE;
+  auto remain = pos % fs::BLOCK_SIZE;
   driver::virtio::MetaData meta_data{};
   meta_data.block_index = target_data_block_index;
   device->Operate(driver::virtio::Operation::read, &meta_data);
-  DirElement dir{};
-  dir.inum = new_inode_pair.second;
-  std::copy(name, name + strlen(name), dir.name);
-  reinterpret_cast<DirElement*>(meta_data.buf.data())[remain / fs::DIR_ELEMENT_SIZE] = dir;
+  memcpy(meta_data.buf.data() + remain, buf, size);
   device->Operate(driver::virtio::Operation::write, &meta_data);
-  inode.size += fs::DIR_ELEMENT_SIZE;
-  UpdateInode(inode_index, &inode);
-
-  InodeDef target_inode{};
-  target_inode.size = 0;
-  if (type == FileType::device) {
-    target_inode.major = major;
-    target_inode.minor = minor;
+  if ((pos + size) > inode->size) {
+    inode->size = pos + size;
+    UpdateInode(inode->inode_index, inode);
   }
-  target_inode.type = type;
-  target_inode.link_count = 1;
-  UpdateInode(new_inode_pair.second, &target_inode);
-  return {true, new_inode_pair.second};
+  return true;
+}
+
+size_t Write(InodeDef* inode, const char* buf, size_t size, size_t pos) {
+  if (pos > inode->size) {
+    return 0;
+  }
+  size_t total_size = size;
+  while (size > 0) {
+    auto remain_block = fs::BLOCK_SIZE - pos % fs::BLOCK_SIZE;
+    auto remain_size = size < remain_block ? size : remain_block;
+    if (!WriteImpl(inode, buf, remain_size, pos)) {
+      return total_size - size;
+    }
+    size -= remain_size;
+    buf += remain_size;
+    pos += remain_size;
+  }
+  return total_size;
 }
 
 bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) {

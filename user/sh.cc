@@ -4,7 +4,7 @@
 #include "lib/syscall.h"
 #include "filesystem/inode_def.h"
 #include "kernel/resource.h"
-#include "kernel/return_code/syscall_err.h"
+#include "kernel/sys_def/syscall_err.h"
 
 int main(void) {
   const char* console_path = "/dev/console";

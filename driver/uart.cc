@@ -26,7 +26,14 @@ bool Uart::Init(uint64_t addr) {
   MEMORY_MAPPED_IO_W_Byte(addr + literal(UartReg::IER), IER_RX_ENABLE);
 
   addr_ = addr;
+  is_writable_ = true;
   return true;
+}
+
+void Uart::Write(const char* buf, size_t size) {
+  for (size_t i = 0; i < size; i++) {
+    put_char(buf[i]);
+  }
 }
 
 void Uart::ProcessInterrupt() {

@@ -17,6 +17,8 @@ class FileStream : public lib::StreamBase {
   virtual size_t Read(char* buf, size_t size) override;
   virtual size_t Size() const override;
 
+  size_t write(const char* buf, size_t size);
+
  private:
   driver::virtio::Device* device_;
   fs::InodeDef& inode_;
