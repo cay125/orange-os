@@ -42,6 +42,11 @@ generate_asm(mkdir)
 target_link_libraries(mkdir ${user_program_link_target})
 target_link_options(mkdir PRIVATE ${user_program_link_option})
 
+add_executable(time time.cc)
+generate_asm(time)
+target_link_libraries(time ${user_program_link_target})
+target_link_options(time PRIVATE ${user_program_link_option})
+
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)
 target_link_options(init_loader PRIVATE ${user_program_link_option})

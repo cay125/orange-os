@@ -33,6 +33,7 @@ int sys_getcwd();
 int sys_chdir();
 int sys_mkdir();
 int sys_sbrk();
+int sys_uptime();
 
 }  // namespace syscall
 }  // namespace kernel

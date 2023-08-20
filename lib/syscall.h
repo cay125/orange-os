@@ -20,6 +20,7 @@ int getcwd(char* buf, size_t max_len);
 int chdir(const char*);
 int mkdir(const char*);
 char* sbrk(uint32_t);
+int uptime();
 
 }  // namespace syscall
 

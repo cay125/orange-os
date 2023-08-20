@@ -29,6 +29,7 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_chdir]   = sys_chdir,
   [SYSCALL_mkdir]   = sys_mkdir,
   [SYSCALL_sbrk]    = sys_sbrk,
+  [SYSCALL_uptime]  = sys_uptime,
 };
 
 int Manager::Sum() {

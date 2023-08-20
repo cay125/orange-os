@@ -346,5 +346,10 @@ int sys_sbrk() {
   return max_mem_addr;
 }
 
+int sys_uptime() {
+  uint64_t current_tick = Schedueler::Instance()->SystemTick();
+  return current_tick;
+}
+
 }  // namespace syscall
 }  // namespace kernel
