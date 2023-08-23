@@ -149,6 +149,15 @@ void free(void* addr) {
 void* operator new(unsigned long size) {
   return lib::malloc(size);
 }
+
 void operator delete(void* addr, unsigned long) {
+  lib::free(addr);
+}
+
+void* operator new[](unsigned long size) {
+  return lib::malloc(size);
+}
+
+void operator delete[](void* addr) {
   lib::free(addr);
 }

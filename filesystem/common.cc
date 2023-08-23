@@ -193,18 +193,18 @@ std::pair<bool, uint32_t> AllocInode() {
   return {false, 0};
 }
 
-std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const char* name, uint8_t major, uint8_t minor) {
+std::pair<bool, InodeDef> CreateImpl(uint32_t inode_index, FileType type, const char* name, uint8_t major, uint8_t minor) {
   if (strlen(name) > fs::MAX_FILE_NAME_LEN) {
-    return {false, 0};
+    return {false, InodeDef{}};
   }
   InodeDef inode{};
   GetInode(inode_index, &inode);
   if (inode.type != FileType::directory) {
-    return {false, 0};
+    return {false, InodeDef{}};
   }
   auto new_inode_pair = AllocInode();
   if (!new_inode_pair.first) {
-    return {false, 0};
+    return {false, InodeDef{}};
   }
   DirElement dir{};
   dir.inum = new_inode_pair.second;
@@ -220,7 +220,7 @@ std::pair<bool, uint32_t> CreateImpl(uint32_t inode_index, FileType type, const 
   target_inode.type = type;
   target_inode.link_count = 1;
   UpdateInode(new_inode_pair.second, &target_inode);
-  return {true, new_inode_pair.second};
+  return {true, target_inode};
 }
 
 bool WriteImpl(InodeDef* inode, const char* buf, size_t size, size_t pos) {
@@ -297,7 +297,7 @@ size_t Write(InodeDef* inode, const char* buf, size_t size, size_t pos) {
   return total_size;
 }
 
-bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) {
+bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor, fs::InodeDef* target_inode) {
   char paths[16][fs::MAX_FILE_NAME_LEN] = {0};
   int path_level = ParsePath(path_name, paths);
   if (path_level < 0) {
@@ -314,7 +314,8 @@ bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) 
         kernel::printf("Error: Create file failed, target: \"%s\"\n", paths + i);
         return false;
       }
-      entry_inode = create_ret.second;
+      entry_inode = create_ret.second.inode_index;
+      inode = create_ret.second;
     } else {
       if (i == (path_level - 1)) {
         kernel::printf("Warning: Target File: \"%s\" exists, type: %s, size: %d\n", path_name, FileTypeName(inode.type), inode.size);
@@ -324,6 +325,9 @@ bool Create(const char* path_name, FileType type, uint8_t major, uint8_t minor) 
       }
       entry_inode = open_ret;
     }
+  }
+  if (target_inode) {
+    *target_inode = inode;
   }
   return true;
 }

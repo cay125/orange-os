@@ -26,7 +26,7 @@ int main(void) {
   while(true) {
     char buf[128];
     syscall::getcwd(buf, 128);
-    printf("\033[34;1m%s\033[32;1m$\033[0m ", buf);
+    printf("\033[34;1m%s\033[32;1m$\033[0m > ", buf);
     int n = syscall::read(console, buf, 128);
     if (buf[n - 1] == '\n') {
       buf[n - 1] = '\0';

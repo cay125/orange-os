@@ -351,5 +351,30 @@ int sys_uptime() {
   return current_tick;
 }
 
+int sys_create() {
+  auto root_page = Schedueler::Instance()->ThisProcess()->page_table;
+  auto path_name = reinterpret_cast<const char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(0)));
+  fs::FileType file_type = static_cast<fs::FileType>(comm::GetIntArg(1));
+  if (file_type != fs::FileType::directory && file_type != fs::FileType::regular_file) {
+    return -1;
+  }
+  fs::InodeDef target_inode;
+  bool ret = fs::Create(path_name, file_type, 0, 0, &target_inode);
+  if (!ret) {
+    return -1;
+  }
+  auto& fds = Schedueler::Instance()->ThisProcess()->file_descriptor;
+  for (auto it = fds.begin(); it != fds.end(); ++it) {
+    if (it->file_type == fs::FileType::none) {
+      it->file_type = file_type;
+      it->inode_index = target_inode.inode_index;
+      it->inode = target_inode;
+      it->offset = 0;
+      return it - fds.begin();
+    }
+  }
+  return -1;
+}
+
 }  // namespace syscall
 }  // namespace kernel

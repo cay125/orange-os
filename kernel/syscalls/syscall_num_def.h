@@ -18,5 +18,6 @@
 #define SYSCALL_mkdir      14
 #define SYSCALL_sbrk       15
 #define SYSCALL_uptime     16
+#define SYSCALL_create     17
 
 #endif

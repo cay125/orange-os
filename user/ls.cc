@@ -20,6 +20,7 @@ void ShowFile(const char* name, int fd, fs::FileState* file_state = nullptr) {
   } else if (f.type == fs::FileType::regular_file) {
     printf("   -%8d    %s\n", f.size, name);
   }
+  printf("\033[0m");
 }
 
 void DoList(const char* path) {

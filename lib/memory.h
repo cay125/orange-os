@@ -11,3 +11,6 @@ void free(void* addr);
 
 void* operator new(unsigned long size);
 void operator delete(void* addr, unsigned long);
+
+void* operator new[](unsigned long size);
+void operator delete[](void* addr);

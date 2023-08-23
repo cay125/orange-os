@@ -2,6 +2,7 @@
 #define LIB_SYSCALLS_H_
 
 #include "lib/types.h"
+#include "filesystem/inode_def.h"
 namespace syscall {
   
 int write(int fd, const void* src, int size);
@@ -21,6 +22,7 @@ int chdir(const char*);
 int mkdir(const char*);
 char* sbrk(uint32_t);
 int uptime();
+int create(const char* path, fs::FileType type);
 
 }  // namespace syscall
 

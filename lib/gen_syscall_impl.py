@@ -13,9 +13,10 @@ if __name__ == '__main__':
         funs.append(ret.group().split()[1].split('(')[0])
   sed_command = 'sed s/\;$/{}/ ' + sys.argv[2] + ' | ' + "sed 's/" + '"' + "/" + '\\' + '\\' + '"' + "/g'"
   content = '"' + ''.join(os.popen(sed_command).readlines()) + '"'
-  compile_command = 'echo ' + content + ' | ' + sys.argv[1] + ' -x c++ - -o - -I' + sys.argv[4] +  ' -S -w | grep "^_" | sed "s/:$//"'
+  compile_command = 'echo ' + content + ' | ' + sys.argv[1] + ' -x c++ - -o - -I' + sys.argv[4] +  ' -S -w | grep "^_" | grep "syscall" | sed "s/:$//"'
   sys_call_impl = '#include "kernel/syscalls/syscall_num_def.h"\n\n'
   items = os.popen(compile_command).readlines()
+  assert(len(funs) == len(items))
   for index, item in enumerate(items):
     item = item.strip()
     sys_call_impl += '.global ' + item + '\n'
