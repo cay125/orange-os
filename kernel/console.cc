@@ -73,9 +73,11 @@ void Console::InterruptHandler(const char* s, size_t len) {
     return;
   }
   for (size_t i = 0; i < len; i++) {
-    if (s[i] == '\x7f') {
-      context.write_index--;
-      EchoBackSpace();
+    if (s[i] == '\x7f' || s[i] == '\b') {
+      if (context.read_index != context.write_index) {
+        context.write_index--;
+        EchoBackSpace();
+      }
       continue;
     }
     context.buf[context.write_index % buf_len] = s[i];
