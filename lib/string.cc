@@ -28,6 +28,20 @@ void * memmove(void *dest, const void *src, size_t size) {
   return dest;
 }
 
+int memcmp(const void * ptr1, const void * ptr2, size_t num) {
+  const uint8_t* s = reinterpret_cast<const uint8_t*>(ptr1);
+  const uint8_t* d = reinterpret_cast<const uint8_t*>(ptr2);
+  for (size_t i = 0; i < num; i++) {
+    if (s > d) {
+      return 1;
+    }
+    if (s < d) {
+      return -1;
+    }
+  }
+  return 0;
+}
+
 size_t strlen(const char* s) {
   const char* p = s;
   while (*p) {
@@ -53,6 +67,16 @@ int strcmp(const char *s1, const char *s2) {
     }
   }
   return 0;
+}
+
+const char* strchr(const char* str, char c) {
+  while (*str) {
+    if (*str == c) {
+      return str;
+    }
+    str++;
+  }
+  return nullptr;
 }
 
 }

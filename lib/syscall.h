@@ -1,6 +1,7 @@
 #ifndef LIB_SYSCALLS_H_
 #define LIB_SYSCALLS_H_
 
+#include "kernel/sys_def/device_info.h"
 #include "lib/types.h"
 #include "filesystem/inode_def.h"
 namespace syscall {
@@ -23,6 +24,9 @@ int mkdir(const char*);
 char* sbrk(uint32_t);
 int uptime();
 int create(const char* path, fs::FileType type);
+int get_screen_info(device_info::screen_info* screen_info);
+uint8_t* framebuffer(size_t size);
+int frame_flush();
 
 }  // namespace syscall
 

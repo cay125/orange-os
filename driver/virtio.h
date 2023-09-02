@@ -6,6 +6,7 @@
 
 #include "driver/basic_device.h"
 #include "kernel/config/memory_layout.h"
+#include "kernel/lock/critical_guard.h"
 #include "kernel/lock/spin_lock.h"
 #include "kernel/process.h"
 #include "lib/types.h"
@@ -101,6 +102,18 @@ struct virtq_desc {
   virtq_desc_flag flags;
   uint16_t next;
 };
+
+template <class T>
+void fill_desc(virtq_desc* desc, T* addr, virtq_desc_flag flag, uint16_t next) {
+  desc->addr = reinterpret_cast<uint64_t>(addr);
+  desc->len = sizeof(T);
+  desc->flags = flag;
+  if (flag & virtq_desc_flag::VIRTQ_DESC_F_NEXT) {
+    desc->next = next;
+  } else {
+    desc->next = 0;
+  }
+}
 
 enum class virtq_avail_flag : uint16_t {
   NONE = 0,
@@ -234,7 +247,11 @@ struct MetaData {
   uint64_t block_index;
 };
 
+template<class... T>
+class mmio_transport;
 class Device : public BasicDevice {
+  template<class... T>
+  friend class mmio_transport;
  public:
   Device();
   virtual device_id GetDeviceId() = 0;
@@ -243,16 +260,33 @@ class Device : public BasicDevice {
 
  protected:
   int AllocDesc();
+  template<size_t N>
+  bool AllocMultiDesc(std::array<uint32_t, N>* descs) {
+    kernel::CriticalGuard guard(&lk_);
+    for (size_t i = 0; i < descs->size(); ++i) {
+      (*descs)[i] = AllocDesc();
+      if ((*descs)[i] < 0) {
+        for (size_t j = 0; j < i; ++j) {
+          FreeDesc((*descs)[j]);
+        }
+        return false;
+      }
+    }
+    return true;
+  }
   void FreeDesc(uint32_t desc_index);
   void FreeDesc(std::initializer_list<uint32_t> desc_list);
 
   uint8_t bit_map_[queue_buffer_size / 8] = {0};
-  virt_queue* queue = nullptr;
+  virt_queue* queue[4] = {nullptr};
   struct InternalData {
     volatile bool waiting_flag;
     uint8_t status = 0;
   };
   InternalData internal_data_[queue_buffer_size];
+  uint32_t last_seen_used_idx_ = 0;
+  kernel::SpinLock lk_;
+  kernel::Channel channel_;
 };
 
 class BlockDevice : public Device {
@@ -260,6 +294,7 @@ class BlockDevice : public Device {
   BlockDevice();
   bool Init(uint64_t virtio_addr) override;
   bool Operate(Operation op, MetaData* meta_data) override;
+  uint64_t Capacity();
 
   device_id GetDeviceId() override {
     return device_id::block_device;
@@ -273,14 +308,10 @@ class BlockDevice : public Device {
 
  private:
   bool Validate();
-  bool Alloc3Desc(std::array<uint32_t, 3>* descs);
 
   blk::virtio_blk_req blk_req[queue_buffer_size];
   uint64_t addr_ = 0;
   uint64_t capacity_ = 0;
-  uint32_t last_seen_used_idx_ = 0;
-  kernel::SpinLock lk_;
-  kernel::Channel channel_;
 };
 
 }  // namespace virtio

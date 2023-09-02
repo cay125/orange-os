@@ -52,6 +52,11 @@ generate_asm(cp)
 target_link_libraries(cp ${user_program_link_target})
 target_link_options(cp PRIVATE ${user_program_link_option})
 
+add_executable(lcd lcd.cc)
+generate_asm(lcd)
+target_link_libraries(lcd ${user_program_link_target})
+target_link_options(lcd PRIVATE ${user_program_link_option})
+
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)
 target_link_options(init_loader PRIVATE ${user_program_link_option})

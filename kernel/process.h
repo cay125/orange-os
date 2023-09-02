@@ -74,6 +74,7 @@ struct ProcessTask {
   void FreePageTable(bool need_free_kernel_page = true);
   void CopyMemoryFrom(const ProcessTask* process);
   bool CopyFrom(const ProcessTask* process);
+  uint64_t ExpandMemory(size_t bytes);
 };
 
 class ProcessManager {

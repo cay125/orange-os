@@ -39,6 +39,8 @@ constexpr uint64_t CLINT_MTIMECMP(int hart_id) {
 }
 
 constexpr uint64_t VIRTIO0 = 0x10001000;
+constexpr uint64_t VIRTIO1 = 0x10002000;
+constexpr uint64_t VIRTIO2 = 0x10003000;
 
 constexpr uint64_t KERNEL_BASE = 0x8000'0000L;
 constexpr uint64_t MEMORY_END = KERNEL_BASE + 128 * 1024 * 1024;

@@ -35,6 +35,9 @@ int sys_mkdir();
 int sys_sbrk();
 int sys_uptime();
 int sys_create();
+int sys_get_screen_info() ;
+int sys_framebuffer();
+int sys_frame_flush();
 
 }  // namespace syscall
 }  // namespace kernel

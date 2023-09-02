@@ -19,5 +19,8 @@
 #define SYSCALL_sbrk       15
 #define SYSCALL_uptime     16
 #define SYSCALL_create     17
+#define SYSCALL_get_screen_info 18
+#define SYSCALL_framebuffer 19
+#define SYSCALL_frame_flush 20
 
 #endif

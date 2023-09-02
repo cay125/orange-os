@@ -155,4 +155,23 @@ bool ProcessTask::CopyFrom(const ProcessTask* src_process) {
   return true;
 }
 
+uint64_t ProcessTask::ExpandMemory(size_t bytes) {
+  if (bytes == 0) {
+    return 0;
+  }
+  uint64_t max_mem_addr = 0;
+  for (size_t i = 0; i < used_address_size; i++) {
+    if (used_address[i].second > max_mem_addr) {
+      max_mem_addr = used_address[i].second;
+    }
+  }
+  max_mem_addr = VirtualMemory::AddrCastUp(max_mem_addr);
+  if (!VirtualMemory::Instance()->MapMemory(page_table, max_mem_addr, max_mem_addr + bytes, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U)) {
+    return 0;
+  }
+  used_address[used_address_size] = {max_mem_addr, max_mem_addr + bytes};
+  used_address_size += 1;
+  return max_mem_addr;
+}
+
 }  // namespace kernel

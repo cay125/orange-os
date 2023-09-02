@@ -8,12 +8,15 @@
 #include "driver/basic_device.h"
 #include "driver/uart.h"
 #include "driver/virtio.h"
+#include "driver/virtio_gpu.h"
 
 namespace driver {
 
 enum class DeviceList {
   device_list_begin,
   disk0,
+  disk1,
+  gpu0,
   uart0,
   device_list_end,
 };
@@ -26,6 +29,8 @@ class DeviceFactory : public lib::Singleton<DeviceFactory> {
 
  private:
   driver::virtio::BlockDevice blk_device0_;
+  driver::virtio::BlockDevice blk_device1_;
+  driver::virtio::GPUDevice gpu_device0_;
   driver::Uart uart_;
 };
 

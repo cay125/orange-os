@@ -12,6 +12,8 @@ constexpr uint8_t MIN_PRIORITY = 0;
 enum class irq : uint8_t {
   NONE = 0,
   VIRTIO0_IRQ = 1,
+  VIRTIO1_IRQ = 2,
+  VIRTIO2_IRQ = 3,
   UARRT0_IRQ = 10,
 };
 

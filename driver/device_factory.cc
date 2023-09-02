@@ -39,8 +39,12 @@ struct EnumArray : std::array<T, N> {
 EnumArray<DeviceInfo, static_cast<std::underlying_type_t<DeviceList>>(DeviceList::device_list_end)> device_info = {
   // begin
   DeviceInfo{0, riscv::plic::irq::NONE},
-  // disko
+  // disk0
   DeviceInfo{memory_layout::VIRTIO0, riscv::plic::irq::VIRTIO0_IRQ},
+  // disk1
+  DeviceInfo{memory_layout::VIRTIO1, riscv::plic::irq::VIRTIO1_IRQ},
+  // gpu0
+  DeviceInfo{memory_layout::VIRTIO2, riscv::plic::irq::VIRTIO2_IRQ},
   // uart0
   DeviceInfo{memory_layout::UART0, riscv::plic::irq::UARRT0_IRQ},
 };
@@ -64,6 +68,12 @@ void DeviceFactory::InitDevices() {
 driver::BasicDevice* DeviceFactory::GetDevice(DeviceList device) {
   if (device == DeviceList::disk0) {
     return &blk_device0_;    
+  }
+  if (device == DeviceList::disk1) {
+    return &blk_device1_;
+  }
+  if (device == DeviceList::gpu0) {
+    return &gpu_device0_;
   }
   if (device == DeviceList::uart0) {
     return &uart_;

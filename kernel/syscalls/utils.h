@@ -3,6 +3,8 @@
 
 #include <type_traits>
 
+#include "kernel/scheduler.h"
+#include "kernel/virtual_memory.h"
 #include "lib/types.h"
 
 namespace kernel {
@@ -21,7 +23,17 @@ T GetIntegralArg(int order) {
 
 template <typename T>
 T* GetAddrArg(int order) {
-  return reinterpret_cast<T*>(GetRawArg(order));
+  uint64_t user_addr = GetRawArg(order);
+  if (!user_addr) {
+    return nullptr;
+  }
+  auto* process = Schedueler::Instance()->ThisProcess();
+  riscv::PTE pte = riscv::PTE::None;
+  auto pa = VirtualMemory::Instance()->VAToPA(process->page_table, user_addr, &pte);
+  if (!pa || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
+    return nullptr;
+  }
+  return reinterpret_cast<T*>(pa);
 }
 
 }  // namespace comm

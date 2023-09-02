@@ -3,6 +3,7 @@
 #include "arch/riscv_reg.h"
 #include "driver/uart.h"
 #include "driver/device_factory.h"
+#include "driver/virtio_gpu.h"
 #include "filesystem/common.h"
 #include "filesystem/inode_def.h"
 #include "filesystem/filestream.h"
@@ -12,6 +13,7 @@
 #include "kernel/lock/critical_guard.h"
 #include "kernel/resource_factory.h"
 #include "kernel/scheduler.h"
+#include "kernel/sys_def/device_info.h"
 #include "kernel/sys_def/syscall_err.h"
 #include "kernel/syscalls/define.h"
 #include "kernel/syscalls/utils.h"
@@ -327,23 +329,7 @@ int sys_mkdir() {
 int sys_sbrk() {
   auto* process = Schedueler::Instance()->ThisProcess();
   uint32_t bytes = comm::GetIntegralArg<uint32_t>(0);
-  if (bytes == 0) {
-    return 0;
-  }
-  uint64_t max_mem_addr = 0;
-  for (size_t i = 0; i < process->used_address_size; i++) {
-    if (process->used_address[i].second > max_mem_addr) {
-      max_mem_addr = process->used_address[i].second;
-    }
-  }
-  max_mem_addr = VirtualMemory::AddrCastUp(max_mem_addr);
-  bool ret = VirtualMemory::Instance()->MapMemory(process->page_table, max_mem_addr, max_mem_addr + bytes, riscv::PTE::R | riscv::PTE::W | riscv::PTE::U);
-  if (!ret) {
-    return 0;
-  }
-  process->used_address[process->used_address_size] = {max_mem_addr, max_mem_addr + bytes};
-  process->used_address_size += 1;
-  return max_mem_addr;
+  return process->ExpandMemory(bytes);
 }
 
 int sys_uptime() {
@@ -374,6 +360,39 @@ int sys_create() {
     }
   }
   return -1;
+}
+
+int sys_get_screen_info() {
+  auto* info = comm::GetAddrArg<device_info::screen_info>(0);
+  if (!info) {
+    printf("sys_get_screen_info: invalid addr: \n");
+    return -1;
+  }
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  driver::virtio::gpu::virtio_gpu_resp_display_info display_info = gpu_device->GetDisplayInfo();
+  info->height = display_info.pmodes[0].r.height;
+  info->width = display_info.pmodes[0].r.width;
+  return 0;
+}
+
+int sys_framebuffer() {
+  auto* process = Schedueler::Instance()->ThisProcess();
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  driver::virtio::gpu::virtio_gpu_resp_display_info info = gpu_device->GetDisplayInfo();
+  auto& rect = info.pmodes[0].r;
+  size_t memory_size = rect.height * rect.width * 4;
+  uint64_t addr = process->ExpandMemory(memory_size);
+  bool map_ret = gpu_device->SetupFramebuffer(rect, 0, addr, memory_size);
+  if (!map_ret) {
+    return 0;
+  }
+  return addr;
+}
+
+int sys_frame_flush() {
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  gpu_device->Flush();
+  return 0;
 }
 
 }  // namespace syscall

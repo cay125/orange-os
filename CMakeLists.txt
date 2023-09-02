@@ -29,9 +29,13 @@ add_compile_options(
   -nostdlib
   -ffreestanding
   -fno-common
-  -fno-rtti
   -fno-exceptions
-  -std=c++20
+)
+
+# cxx only option
+add_compile_options(
+  $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+  $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -61,20 +65,44 @@ add_custom_command(
   DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets} ${CMAKE_SOURCE_DIR}/user/resource/README.txt
 )
 
-add_custom_target(
-  gen_fs
-  DEPENDS fs.img
+set(FAT_FS_IMG_SIZE 128000)
+
+add_custom_command(
+  OUTPUT fat_fs.img
+  COMMAND python3 ${CMAKE_SOURCE_DIR}/filesystem/mkfs_fat.py fat_fs.img ${FAT_FS_IMG_SIZE} ${user_target_paths} ${CMAKE_SOURCE_DIR}/user/resource/README.txt
+  DEPENDS ${CMAKE_SOURCE_DIR}/filesystem/mkfs_fat.py ${user_targets} ${CMAKE_SOURCE_DIR}/user/resource/README.txt
 )
 
+
+add_custom_target(
+  gen_fs
+  DEPENDS fs.img fat_fs.img
+)
+
+set(XRES 720 CACHE INTERNAL "width of the gpu-device")
+set(YRES 480 CACHE INTERNAL "height of the gpu-device")
+
+message("-- Display width: ${XRES}")
+message("-- Display height: ${YRES}")
+
 set(QEMU_OPTION
-  -machine virt -m 128m -bios none -smp 1 -nographic
+  -machine virt -m 2G -bios none -smp 1 -serial mon:stdio
   -kernel ${CMAKE_BINARY_DIR}/kernel/kernel.elf
   -drive if=none,id=blk0,file=fs.img,format=raw
   -device virtio-blk-device,drive=blk0,bus=virtio-mmio-bus.0
+  -drive if=none,id=blk1,file=fat_fs.img,format=raw
+  -device virtio-blk-device,drive=blk1,bus=virtio-mmio-bus.1
+  -device virtio-gpu-device,bus=virtio-mmio-bus.2,xres=${XRES},yres=${YRES}
 )
 
 add_custom_target(
   qemu
+  COMMAND qemu-system-riscv64 ${QEMU_OPTION} -nographic
+  DEPENDS kernel.elf gen_fs
+)
+
+add_custom_target(
+  qemu-gui
   COMMAND qemu-system-riscv64 ${QEMU_OPTION}
   DEPENDS kernel.elf gen_fs
 )
@@ -82,6 +110,6 @@ add_custom_target(
 add_custom_target(
   qemu-debug
   COMMAND /usr/bin/echo "open new terminal to start gdb"
-  COMMAND qemu-system-riscv64 ${QEMU_OPTION} -S -gdb tcp::25000
+  COMMAND qemu-system-riscv64 ${QEMU_OPTION} -nographic -S -gdb tcp::25000
   DEPENDS kernel.elf gen_fs
 )

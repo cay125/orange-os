@@ -21,7 +21,7 @@ int Device::AllocDesc() {
   return -1;
 }
 
-Device::Device() {
+Device::Device() : channel_(this) {
 
 }
 
@@ -29,7 +29,7 @@ void Device::FreeDesc(uint32_t desc_index) {
   if (desc_index >= queue_buffer_size) kernel::panic("Invalid desc_index[%d] in virt-io: too bigger", desc_index);
   if ((bit_map_[desc_index / 8] & (1 << desc_index % 8)) == 0) kernel::panic("Invalid desc_index[%d] in virt-io: weird num", desc_index);
   bit_map_[desc_index / 8] &= ~(1 << (desc_index % 8));
-  memset(queue->desc + desc_index, 0, sizeof(virtq_desc));
+  memset(queue[0]->desc + desc_index, 0, sizeof(virtq_desc));
 }
 
 void Device::FreeDesc(std::initializer_list<uint32_t> desc_list) {
@@ -38,7 +38,7 @@ void Device::FreeDesc(std::initializer_list<uint32_t> desc_list) {
   }
 }
 
-BlockDevice::BlockDevice() : channel_(this) {
+BlockDevice::BlockDevice() : Device()  {
 
 }
 
@@ -115,7 +115,7 @@ bool BlockDevice::Init(uint64_t virtio_addr) {
     return false;
   }
   MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueuePFN, reinterpret_cast<uint64_t>(page) / memory_layout::PGSIZE);
-  queue = reinterpret_cast<virt_queue*>(page);
+  queue[0] = reinterpret_cast<virt_queue*>(page);
 
   // OS finish device setting
   status |= status_field::DRIVER_OK;
@@ -132,32 +132,13 @@ bool BlockDevice::Validate() {
   return true;
 }
 
-bool BlockDevice::Alloc3Desc(std::array<uint32_t, 3>* descs) {
-  kernel::CriticalGuard guard(&lk_);
-  (*descs)[0] = AllocDesc();
-  if ((*descs)[0] < 0) {
-    return false;
-  }
-  (*descs)[1] = AllocDesc();
-  if ((*descs)[1] < 0) {
-    FreeDesc({(*descs)[0]});
-    return false;
-  }
-  (*descs)[2] = AllocDesc();
-  if ((*descs)[2] < 0) {
-    FreeDesc({(*descs)[0], (*descs)[1]});
-    return false;
-  }
-  return true;
-}
-
 bool BlockDevice::Operate(Operation op, MetaData* meta_data) {
   if (op != Operation::read && op != Operation::write) {
     kernel::printf("[virtio] device: %#x invalid operation", addr_);
     return false;
   }
   std::array<uint32_t, 3> descs;
-  if (!Alloc3Desc(&descs)) {
+  if (!AllocMultiDesc(&descs)) {
     return false;
   }
   auto* req = &blk_req[descs[0]];
@@ -167,54 +148,38 @@ bool BlockDevice::Operate(Operation op, MetaData* meta_data) {
     req->type = blk::req_type::VIRTIO_BLK_T_OUT;
   }
   req->sector = meta_data->block_index;
-  queue->desc[descs[0]].addr = reinterpret_cast<uint64_t>(req);
-  queue->desc[descs[0]].len = sizeof(blk::virtio_blk_req);
-  queue->desc[descs[0]].flags = virtq_desc_flag::VIRTQ_DESC_F_NEXT;
-  queue->desc[descs[0]].next = descs[1];
+  queue[0]->desc[descs[0]].addr = reinterpret_cast<uint64_t>(req);
+  queue[0]->desc[descs[0]].len = sizeof(blk::virtio_blk_req);
+  queue[0]->desc[descs[0]].flags = virtq_desc_flag::VIRTQ_DESC_F_NEXT;
+  queue[0]->desc[descs[0]].next = descs[1];
 
-  queue->desc[descs[1]].addr = reinterpret_cast<uint64_t>(meta_data->buf.data());
-  queue->desc[descs[1]].len = block_size;
-  queue->desc[descs[1]].flags = virtq_desc_flag::VIRTQ_DESC_F_NEXT;
+  queue[0]->desc[descs[1]].addr = reinterpret_cast<uint64_t>(meta_data->buf.data());
+  queue[0]->desc[descs[1]].len = block_size;
+  queue[0]->desc[descs[1]].flags = virtq_desc_flag::VIRTQ_DESC_F_NEXT;
   if (op == Operation::read) {
-    queue->desc[descs[1]].flags |= virtq_desc_flag::VIRTQ_DESC_F_WRITE;
+    queue[0]->desc[descs[1]].flags |= virtq_desc_flag::VIRTQ_DESC_F_WRITE;
   }
-  queue->desc[descs[1]].next = descs[2];
+  queue[0]->desc[descs[1]].next = descs[2];
 
   internal_data_[descs[0]].status = 0xff;
-  queue->desc[descs[2]].addr = reinterpret_cast<uint64_t>(&internal_data_[descs[0]].status);
-  queue->desc[descs[2]].len = 1;
-  queue->desc[descs[2]].flags = virtq_desc_flag::VIRTQ_DESC_F_WRITE;
-  queue->desc[descs[2]].next = 0;
+  queue[0]->desc[descs[2]].addr = reinterpret_cast<uint64_t>(&internal_data_[descs[0]].status);
+  queue[0]->desc[descs[2]].len = 1;
+  queue[0]->desc[descs[2]].flags = virtq_desc_flag::VIRTQ_DESC_F_WRITE;
+  queue[0]->desc[descs[2]].next = 0;
 
   {
     kernel::CriticalGuard guard(&lk_);
-    queue->avail.ring[queue->avail.idx % queue_buffer_size] = descs[0];
+    queue[0]->avail.ring[queue[0]->avail.idx % queue_buffer_size] = descs[0];
 
     __sync_synchronize();
 
-    queue->avail.idx += 1;
+    queue[0]->avail.idx += 1;
 
     internal_data_[descs[0]].waiting_flag = true;
 
     __sync_synchronize();
 
     MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueueNotify, 0);
-  }
-
-  // try to get waiting_flag
-  const int max_try_cnt = 20;
-  int cur_try_cnt = 0;
-  while (internal_data_[descs[0]].waiting_flag) {
-    cur_try_cnt += 1;
-    if (cur_try_cnt >= max_try_cnt) {
-      break;
-    }
-  }
-  if (cur_try_cnt < max_try_cnt) {
-    // lucky day
-    kernel::CriticalGuard guard(&lk_);
-    FreeDesc({descs[0], descs[1], descs[2]});
-    return true;
   }
 
   {
@@ -233,13 +198,17 @@ void BlockDevice::ProcessInterrupt() {
   auto interrupt_status = MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::InterruptStatus);
   MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::InterruptACK, interrupt_status & 0x3);
   __sync_synchronize();
-  while (last_seen_used_idx_ != queue->used.idx) {
+  while (last_seen_used_idx_ != queue[0]->used.idx) {
     __sync_synchronize();
-    auto& element = queue->used.ring[last_seen_used_idx_ % queue_buffer_size];
+    auto& element = queue[0]->used.ring[last_seen_used_idx_ % queue_buffer_size];
     internal_data_[element.id].waiting_flag = false;
     last_seen_used_idx_ += 1;
     kernel::Schedueler::Instance()->Wakeup(&channel_);
   }
+}
+
+uint64_t BlockDevice::Capacity() {
+  return capacity_;
 }
 
 }  // namespace virtio
