@@ -2,6 +2,7 @@
 
 #include "driver/virtio.h"
 #include "lib/types.h"
+#include <array>
 
 namespace driver {
 namespace virtio {
@@ -51,7 +52,7 @@ enum class virtio_gpu_ctrl_type : uint32_t {
   VIRTIO_GPU_RESP_ERR_INVALID_PARAMETER,
 };
 
-#define VIRTIO_GPU_FLAG_FENCE (1 << 0)
+constexpr uint32_t VIRTIO_GPU_FLAG_FENCE = (1 << 0);
 
 struct virtio_gpu_ctrl_hdr {
   uint32_t type;
@@ -131,33 +132,56 @@ struct virtio_gpu_resource_flush {
   uint32_t padding;
 };
 
+struct virtio_gpu_cursor_pos {
+  uint32_t scanout_id;
+  uint32_t x;
+  uint32_t y;
+  uint32_t padding;
+};
+
+struct virtio_gpu_update_cursor {
+  virtio_gpu_ctrl_hdr hdr;
+  virtio_gpu_cursor_pos pos;
+  uint32_t resource_id;
+  uint32_t hot_x;
+  uint32_t hot_y;
+  uint32_t padding;
+};
+
+constexpr uint32_t cursor_image_size = 64 * 64 * 4;
+using CursorImage = std::array<uint8_t, cursor_image_size>;
+
 }
 
 class GPUDevice : public Device {
  public:
   GPUDevice();
   bool Init(uint64_t virtio_addr) override;
-  bool Operate(Operation op, MetaData* meta_data) override;
   device_id GetDeviceId() override;
-  std::array<Operation, 64> GetSupportedOperation() override;
   void ProcessInterrupt() override;
 
   gpu::virtio_gpu_resp_display_info GetDisplayInfo();
   bool SetupFramebuffer(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id, uint64_t addr, size_t size);
+  bool SetupCursor(const gpu::CursorImage* cursor_image, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y);
+  void MoveCursor(uint32_t pos_x, uint32_t pos_y);
   void Flush();
   virtq_desc* mutable_indirect_desc();
 
  private:
-  void Create2dResource(uint32_t resource_id, uint32_t width, uint32_t height);
-  void ResourceAttachBacking(uint32_t resource_id, uint64_t addr, size_t size);
+  void Create2dResource(uint32_t resource_id, uint32_t width, uint32_t height, uint32_t flags = 0);
+  void ResourceAttachBacking(uint32_t resource_id, uint64_t addr, size_t size, uint32_t flags = 0);
   void SetScanout(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id, uint32_t resource_id);
-  void TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, uint32_t resource_id);
+  void TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, uint32_t resource_id, uint32_t flags = 0);
   void ResourceFlush(const gpu::virtio_gpu_rect& rect, uint32_t resource_id);
   bool Validate();
+  void UpdateCursor(uint32_t resource_id, uint32_t scanout_id, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y, bool is_move = false);
 
   uint64_t addr_ = 0;
-  gpu::virtio_gpu_rect rect_{};
+  gpu::virtio_gpu_rect screen_rect_{};
+  // The mouse cursor image must be 64x64 in size
+  const gpu::virtio_gpu_rect cursor_rect_{0, 0, 64, 64};
   const uint32_t resource_id_frame_buffer_ = 0xaabb;
+  const uint32_t resource_id_cursor_ = 0xccdd;
   const uint32_t scanout_id_ = 0;
   gpu::virtio_gpu_config config_{};
   virtq_desc indirect_desc_[512];

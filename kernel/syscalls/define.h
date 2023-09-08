@@ -38,6 +38,8 @@ int sys_create();
 int sys_get_screen_info() ;
 int sys_framebuffer();
 int sys_frame_flush();
+int sys_setup_cursor();
+int sys_move_cursor();
 
 }  // namespace syscall
 }  // namespace kernel

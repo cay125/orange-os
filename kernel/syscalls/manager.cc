@@ -32,8 +32,10 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_uptime]  = sys_uptime,
   [SYSCALL_create]  = sys_create,
   [SYSCALL_get_screen_info] = sys_get_screen_info,
-  [SYSCALL_framebuffer] = sys_framebuffer,
-  [SYSCALL_frame_flush] = sys_frame_flush,
+  [SYSCALL_framebuffer]     = sys_framebuffer,
+  [SYSCALL_frame_flush]     = sys_frame_flush,
+  [SYSCALL_setup_cursor]    = sys_setup_cursor,
+  [SYSCALL_move_cursor]     = sys_move_cursor,
 };
 
 int Manager::Sum() {

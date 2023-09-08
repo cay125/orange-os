@@ -154,73 +154,6 @@ struct virt_queue {
   virtq_used used;
 };
 
-namespace blk {
-
-constexpr uint32_t unit = 512;
-
-enum class feature_bit : uint64_t {
-  VIRTIO_BLK_F_BARRIER = 1uL << 0,
-  VIRTIO_BLK_F_SIZE_MAX = 1ul << 1,
-  VIRTIO_BLK_F_SEG_MAX = 1uL << 2,
-  VIRTIO_BLK_F_GEOMETRY = 1uL << 4,
-  VIRTIO_BLK_F_RO = 1uL << 5,
-  VIRTIO_BLK_F_BLK_SIZE = 1uL << 6,
-  VIRTIO_BLK_F_SCSI = 1uL << 7,
-  VIRTIO_BLK_F_FLUSH = 1uL << 9,
-  VIRTIO_BLK_F_TOPOLOGY = 1uL << 10,
-  VIRTIO_BLK_F_CONFIG_WCE = 1uL << 11,
-  VIRTIO_BLK_F_MQ = 1uL << 12,
-  VIRTIO_BLK_F_DISCARD = 1uL << 13,
-  VIRTIO_BLK_F_WRITE_ZEROES = 1uL << 14,
-};
-
-enum class req_type : uint32_t {
-  VIRTIO_BLK_T_IN = 0,
-  VIRTIO_BLK_T_OUT = 1,
-  VIRTIO_BLK_T_FLUSH = 4,
-  VIRTIO_BLK_T_DISCARD = 11,
-  VIRTIO_BLK_T_WRITE_ZEROES = 13,
-};
-
-struct virtio_blk_req {
-  req_type type;
-  uint32_t reserved;
-  uint64_t sector;
-};
-
-struct virtio_blk_config {
-  uint64_t capacity;
-  uint32_t size_max;
-  uint32_t seg_max;
-  struct virtio_blk_geometry {
-    uint16_t cylinders;
-    uint8_t heads;
-    uint8_t sectors;
-  } geometry;
-  uint32_t blk_size;
-  struct virtio_blk_topology {
-    // # of logical blocks per physical block (log2)
-    uint8_t physical_block_exp;
-    // offset of first aligned logical block
-    uint8_t alignment_offset;
-    // suggested minimum I/O size in blocks
-    uint16_t min_io_size;
-    // optimal (suggested maximum) I/O size in blocks
-    uint32_t opt_io_size;
-  } topology;
-  uint8_t writeback;
-  uint8_t unused0[3];
-  uint32_t max_discard_sectors;
-  uint32_t max_discard_seg;
-  uint32_t discard_sector_alignment;
-  uint32_t max_write_zeroes_sectors;
-  uint32_t max_write_zeroes_seg;
-  uint8_t write_zeroes_may_unmap;
-  uint8_t unused1[3];
-};
-
-}  // namespace blk
-
 // device-independent feature bits
 enum class feature_bit : uint64_t {
   VIRTIO_F_NOTIFY_ON_EMPTY = 1uL << 24,
@@ -242,10 +175,7 @@ enum class Operation : uint8_t {
   write = 2,
 };
 
-struct MetaData {
-  std::array<uint8_t, block_size> buf;
-  uint64_t block_index;
-};
+constexpr int max_queue_num = 2;
 
 template<class... T>
 class mmio_transport;
@@ -255,63 +185,35 @@ class Device : public BasicDevice {
  public:
   Device();
   virtual device_id GetDeviceId() = 0;
-  virtual std::array<Operation, 64> GetSupportedOperation() = 0;
-  virtual bool Operate(Operation op, MetaData* meta_data) = 0;
 
  protected:
-  int AllocDesc();
+  int AllocDesc(int queue_index);
   template<size_t N>
-  bool AllocMultiDesc(std::array<uint32_t, N>* descs) {
-    kernel::CriticalGuard guard(&lk_);
+  bool AllocMultiDesc(std::array<uint32_t, N>* descs, int queue_index) {
+    kernel::CriticalGuard guard(&lk_[queue_index]);
     for (size_t i = 0; i < descs->size(); ++i) {
-      (*descs)[i] = AllocDesc();
+      (*descs)[i] = AllocDesc(queue_index);
       if ((*descs)[i] < 0) {
         for (size_t j = 0; j < i; ++j) {
-          FreeDesc((*descs)[j]);
+          FreeDesc((*descs)[j], queue_index);
         }
         return false;
       }
     }
     return true;
   }
-  void FreeDesc(uint32_t desc_index);
-  void FreeDesc(std::initializer_list<uint32_t> desc_list);
+  void FreeDesc(uint32_t desc_index, int queue_index);
+  void FreeDesc(std::initializer_list<uint32_t> desc_list, int queue_index);
 
-  uint8_t bit_map_[queue_buffer_size / 8] = {0};
-  virt_queue* queue[4] = {nullptr};
+  uint8_t bit_map_[max_queue_num][queue_buffer_size / 8] = {{0}, {0}};
+  virt_queue* queue[max_queue_num] = {nullptr};
   struct InternalData {
     volatile bool waiting_flag;
-    uint8_t status = 0;
   };
   InternalData internal_data_[queue_buffer_size];
-  uint32_t last_seen_used_idx_ = 0;
-  kernel::SpinLock lk_;
+  uint32_t last_seen_used_idx_[max_queue_num] = {0};
+  kernel::SpinLock lk_[max_queue_num];
   kernel::Channel channel_;
-};
-
-class BlockDevice : public Device {
- public:
-  BlockDevice();
-  bool Init(uint64_t virtio_addr) override;
-  bool Operate(Operation op, MetaData* meta_data) override;
-  uint64_t Capacity();
-
-  device_id GetDeviceId() override {
-    return device_id::block_device;
-  }
-
-  std::array<Operation, 64> GetSupportedOperation() override {
-    return {Operation::read, Operation::write};
-  }
-
-  void ProcessInterrupt() override;
-
- private:
-  bool Validate();
-
-  blk::virtio_blk_req blk_req[queue_buffer_size];
-  uint64_t addr_ = 0;
-  uint64_t capacity_ = 0;
 };
 
 }  // namespace virtio

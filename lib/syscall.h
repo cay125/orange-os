@@ -4,6 +4,7 @@
 #include "kernel/sys_def/device_info.h"
 #include "lib/types.h"
 #include "filesystem/inode_def.h"
+#include <array>
 namespace syscall {
   
 int write(int fd, const void* src, int size);
@@ -27,6 +28,8 @@ int create(const char* path, fs::FileType type);
 int get_screen_info(device_info::screen_info* screen_info);
 uint8_t* framebuffer(size_t size);
 int frame_flush();
+int setup_cursor(std::array<uint8_t, 64 * 64 * 4>* cursor_image);
+int move_cursor(uint32_t x, uint32_t y);
 
 }  // namespace syscall
 

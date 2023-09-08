@@ -12,8 +12,8 @@ namespace virtio {
 template<typename... T>
 class mmio_transport {
  public:
-  mmio_transport(Device* device, virt_queue* queue, uint64_t addr, T... reqs) : device_(device), desc_index_(0), queue_(queue), addr_(addr) {
-    bool ret = device_->AllocMultiDesc(&descs_);
+  mmio_transport(Device* device, int queue_index, uint64_t addr, T... reqs) : device_(device), desc_index_(0), queue_index_(queue_index), queue_(device_->queue[queue_index]), addr_(addr) {
+    bool ret = device_->AllocMultiDesc(&descs_, queue_index);
     if (!ret) {
       kernel::printf("mmio_transport: alloc desc failed\n");
       return;
@@ -30,25 +30,25 @@ class mmio_transport {
     if (!desc_alloc_succ) {
       return;
     }
-    kernel::CriticalGuard guard(&device_->lk_);
+    kernel::CriticalGuard guard(&device_->lk_[queue_index_]);
     queue_->avail.ring[queue_->avail.idx % queue_buffer_size] = descs_[0];
     __sync_synchronize();
     queue_->avail.idx += 1;
     device_->internal_data_[descs_[0]].waiting_flag = true;
     __sync_synchronize();
-    MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueueNotify, 0);
+    MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::QueueNotify, queue_index_);
   }
 
   void wait_complete() {
     if (!desc_alloc_succ) {
       return;
     }
-    kernel::CriticalGuard guard(&device_->lk_);
+    kernel::CriticalGuard guard(&device_->lk_[queue_index_]);
     while (device_->internal_data_[descs_[0]].waiting_flag) {
-      kernel::Schedueler::Instance()->Sleep(&device_->channel_, &device_->lk_);
+      kernel::Schedueler::Instance()->Sleep(&device_->channel_, &device_->lk_[queue_index_]);
     }
     for (auto desc : descs_) {
-      device_->FreeDesc(desc);
+      device_->FreeDesc(desc, queue_index_);
     }
   }
 
@@ -81,6 +81,7 @@ class mmio_transport {
   int desc_index_;
   bool desc_alloc_succ = false;
   std::array<uint32_t, sizeof...(T)> descs_;
+  int queue_index_;
   virt_queue* queue_;
   uint64_t addr_;
 };

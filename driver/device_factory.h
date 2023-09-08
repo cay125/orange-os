@@ -8,6 +8,7 @@
 #include "driver/basic_device.h"
 #include "driver/uart.h"
 #include "driver/virtio.h"
+#include "driver/virtio_blk.h"
 #include "driver/virtio_gpu.h"
 
 namespace driver {

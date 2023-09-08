@@ -1,7 +1,7 @@
 #ifndef FILESYSTEM_FILESTREAM_H
 #define FILESYSTEM_FILESTREAM_H
 
-#include "driver/virtio.h"
+#include "driver/virtio_blk.h"
 #include "filesystem/inode_def.h"
 #include "lib/streambase.h"
 
@@ -20,7 +20,7 @@ class FileStream : public lib::StreamBase {
   size_t write(const char* buf, size_t size);
 
  private:
-  driver::virtio::Device* device_;
+  driver::virtio::BlockDevice* device_;
   fs::InodeDef& inode_;
 };
 

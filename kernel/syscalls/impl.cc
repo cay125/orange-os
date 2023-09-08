@@ -395,5 +395,18 @@ int sys_frame_flush() {
   return 0;
 }
 
+int sys_setup_cursor() {
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  auto* cursor_image = reinterpret_cast<driver::virtio::gpu::CursorImage*>(comm::GetRawArg(0));
+  gpu_device->SetupCursor(cursor_image, 0, 0, 0, 0);
+  return 0;
+}
+
+int sys_move_cursor() {
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  gpu_device->MoveCursor(comm::GetIntegralArg<uint32_t>(0), comm::GetIntegralArg<uint32_t>(1));
+  return 0;
+}
+
 }  // namespace syscall
 }  // namespace kernel

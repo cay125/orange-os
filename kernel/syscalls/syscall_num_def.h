@@ -22,5 +22,7 @@
 #define SYSCALL_get_screen_info 18
 #define SYSCALL_framebuffer 19
 #define SYSCALL_frame_flush 20
+#define SYSCALL_setup_cursor 21
+#define SYSCALL_move_cursor 22
 
 #endif
