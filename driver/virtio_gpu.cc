@@ -201,6 +201,8 @@ bool GPUDevice::SetupFramebuffer(const gpu::virtio_gpu_rect& rect, uint32_t scan
     return false;
   }
   screen_rect_ = rect;
+  constexpr uint32_t resource_id_frame_buffer = 0xaabb;
+  resource_id_frame_buffer_ = resource_id_frame_buffer;
   Create2dResource(resource_id_frame_buffer_, rect.width, rect.height);
   ResourceAttachBacking(resource_id_frame_buffer_, addr, size);
   SetScanout(rect, scanout_id_, resource_id_frame_buffer_);
@@ -208,6 +210,8 @@ bool GPUDevice::SetupFramebuffer(const gpu::virtio_gpu_rect& rect, uint32_t scan
 }
 
 bool GPUDevice::SetupCursor(const gpu::CursorImage* cursor_image, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y) {
+  constexpr uint32_t resource_id_cursor = 0xccdd;
+  resource_id_cursor_ = resource_id_cursor;
   Create2dResource(resource_id_cursor_, cursor_rect_.width, cursor_rect_.height, gpu::VIRTIO_GPU_FLAG_FENCE);
   ResourceAttachBacking(resource_id_cursor_, reinterpret_cast<uint64_t>(cursor_image->data()), gpu::cursor_image_size, gpu::VIRTIO_GPU_FLAG_FENCE);
   TransferTo2D(cursor_rect_, 0,resource_id_cursor_, gpu::VIRTIO_GPU_FLAG_FENCE);
@@ -297,6 +301,19 @@ void GPUDevice::ResourceAttachBacking(uint32_t resource_id, uint64_t addr, size_
   }
 }
 
+void GPUDevice::ResourceDetachBacking(uint32_t resource_id) {
+  const gpu::virtio_gpu_resource_detach_backing detach{
+    gpu::virtio_gpu_ctrl_hdr{lib::common::literal(gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_CMD_RESOURCE_DETACH_BACKING)},
+    resource_id,
+    0
+  };
+  gpu::virtio_gpu_ctrl_hdr header{};
+  mmio_transport transport(this, 0, addr_, &detach, &header);
+  transport.trigger_notify();
+  transport.wait_complete();
+  CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
+}
+
 void GPUDevice::SetScanout(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id, uint32_t resource_id) {
   const gpu::virtio_gpu_set_scanout set_scanout{
     gpu::virtio_gpu_ctrl_hdr{lib::common::literal(gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_CMD_SET_SCANOUT)},
@@ -314,6 +331,23 @@ void GPUDevice::SetScanout(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id
 void GPUDevice::Flush() {
   TransferTo2D(screen_rect_, 0, resource_id_frame_buffer_);
   ResourceFlush(screen_rect_, resource_id_frame_buffer_);
+}
+
+bool GPUDevice::Drop() {
+  if (resource_id_frame_buffer_ == 0 && resource_id_cursor_ == 0) {
+    return false;
+  }
+  if (resource_id_frame_buffer_ > 0) {
+    ResourceDetachBacking(resource_id_frame_buffer_);
+    ResourceDestroy(resource_id_frame_buffer_);
+    resource_id_frame_buffer_ = 0;
+  }
+  if (resource_id_cursor_ > 0) {
+    ResourceDetachBacking(resource_id_cursor_);
+    ResourceDestroy(resource_id_cursor_);
+    resource_id_cursor_ = 0;
+  }
+  return true;
 }
 
 void GPUDevice::TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, uint32_t resource_id, uint32_t flags) {
@@ -347,6 +381,19 @@ void GPUDevice::ResourceFlush(const gpu::virtio_gpu_rect& rect, uint32_t resourc
   };
   gpu::virtio_gpu_ctrl_hdr header{};
   mmio_transport transport(this, 0, addr_, &resource_flush, &header);
+  transport.trigger_notify();
+  transport.wait_complete();
+  CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
+}
+
+void GPUDevice::ResourceDestroy(uint32_t resource_id) {
+  const gpu::virtio_gpu_resource_unref unref{
+    gpu::virtio_gpu_ctrl_hdr{lib::common::literal(gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_CMD_RESOURCE_UNREF)},
+    resource_id,
+    0
+  };
+  gpu::virtio_gpu_ctrl_hdr header{};
+  mmio_transport transport(this, 0, addr_, &unref, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);

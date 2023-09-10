@@ -408,5 +408,14 @@ int sys_move_cursor() {
   return 0;
 }
 
+int sys_detach_framebuffer() {
+  auto* gpu_device = reinterpret_cast<driver::virtio::GPUDevice*>(driver::DeviceFactory::Instance()->GetDevice(driver::DeviceList::gpu0));
+  bool ret = gpu_device->Drop();
+  if (!ret) {
+    return -1;
+  }
+  return 0;
+}
+
 }  // namespace syscall
 }  // namespace kernel

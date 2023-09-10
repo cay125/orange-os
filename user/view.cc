@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
   }
   printf(PrintLevel::info, "display resolution: [width: %d, height: %d]\n", screen_info.width, screen_info.height);
 
-  auto* frame_buffer = syscall::framebuffer(0);
+  auto* frame_buffer = syscall::framebuffer();
   const device_info::screen_info& c_screen_info = std::as_const(screen_info);
   for (uint32_t y = 0; y < viewer.height(); ++y) {
     if (y >= c_screen_info.height) {
@@ -42,5 +42,11 @@ int main(int argc, char** argv) {
     }
   }
   syscall::frame_flush();
+  {
+    int fd = syscall::open("/dev/console");
+    char buf[1];
+    syscall::read(fd, buf, 1);
+  }
+  syscall::detach_framebuffer();
   return 0;
 }

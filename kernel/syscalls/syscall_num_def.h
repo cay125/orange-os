@@ -24,5 +24,6 @@
 #define SYSCALL_frame_flush 20
 #define SYSCALL_setup_cursor 21
 #define SYSCALL_move_cursor 22
+#define SYSCALL_detach_framebuffer 23
 
 #endif

@@ -36,6 +36,7 @@ int (*Manager::syscalls[])(void) = {
   [SYSCALL_frame_flush]     = sys_frame_flush,
   [SYSCALL_setup_cursor]    = sys_setup_cursor,
   [SYSCALL_move_cursor]     = sys_move_cursor,
+  [SYSCALL_detach_framebuffer] = sys_detach_framebuffer,
 };
 
 int Manager::Sum() {

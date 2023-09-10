@@ -104,6 +104,12 @@ struct virtio_gpu_resource_attach_backing {
   uint32_t nr_entries;
 };
 
+struct virtio_gpu_resource_detach_backing {
+  virtio_gpu_ctrl_hdr hdr;
+  uint32_t resource_id;
+  uint32_t padding;
+};
+
 struct virtio_gpu_mem_entry {
   uint64_t addr;
   uint32_t length;
@@ -128,6 +134,12 @@ struct virtio_gpu_transfer_to_host_2d {
 struct virtio_gpu_resource_flush {
   virtio_gpu_ctrl_hdr hdr;
   virtio_gpu_rect r;
+  uint32_t resource_id;
+  uint32_t padding;
+};
+
+struct virtio_gpu_resource_unref {
+  virtio_gpu_ctrl_hdr hdr;
   uint32_t resource_id;
   uint32_t padding;
 };
@@ -165,14 +177,17 @@ class GPUDevice : public Device {
   bool SetupCursor(const gpu::CursorImage* cursor_image, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y);
   void MoveCursor(uint32_t pos_x, uint32_t pos_y);
   void Flush();
+  bool Drop();
   virtq_desc* mutable_indirect_desc();
 
  private:
   void Create2dResource(uint32_t resource_id, uint32_t width, uint32_t height, uint32_t flags = 0);
   void ResourceAttachBacking(uint32_t resource_id, uint64_t addr, size_t size, uint32_t flags = 0);
+  void ResourceDetachBacking(uint32_t resource_id);
   void SetScanout(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id, uint32_t resource_id);
   void TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, uint32_t resource_id, uint32_t flags = 0);
   void ResourceFlush(const gpu::virtio_gpu_rect& rect, uint32_t resource_id);
+  void ResourceDestroy(uint32_t resource_id);
   bool Validate();
   void UpdateCursor(uint32_t resource_id, uint32_t scanout_id, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y, bool is_move = false);
 
@@ -180,8 +195,8 @@ class GPUDevice : public Device {
   gpu::virtio_gpu_rect screen_rect_{};
   // The mouse cursor image must be 64x64 in size
   const gpu::virtio_gpu_rect cursor_rect_{0, 0, 64, 64};
-  const uint32_t resource_id_frame_buffer_ = 0xaabb;
-  const uint32_t resource_id_cursor_ = 0xccdd;
+  uint32_t resource_id_frame_buffer_ = 0;
+  uint32_t resource_id_cursor_ = 0;
   const uint32_t scanout_id_ = 0;
   gpu::virtio_gpu_config config_{};
   virtq_desc indirect_desc_[512];

@@ -40,6 +40,7 @@ int sys_framebuffer();
 int sys_frame_flush();
 int sys_setup_cursor();
 int sys_move_cursor();
+int sys_detach_framebuffer();
 
 }  // namespace syscall
 }  // namespace kernel

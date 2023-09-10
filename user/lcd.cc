@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     return -1;
   }
   printf(PrintLevel::info, "display resolution: [width: %d, height: %d]\n", screen_info.width, screen_info.height);
-  auto* frame_buffer = syscall::framebuffer(0);
+  auto* frame_buffer = syscall::framebuffer();
   for (uint32_t y = 0; y < screen_info.height; y++) {
     for (uint32_t x = 0; x < screen_info.width; x++) {
       frame_buffer[(y * screen_info.width + x) * 4] = x;
@@ -45,5 +45,6 @@ int main(int argc, char** argv) {
     syscall::sleep(100);
     cnt += 1;
   }
+  syscall::detach_framebuffer();
   return 0;
 }
