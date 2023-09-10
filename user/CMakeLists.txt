@@ -5,7 +5,7 @@ add_compile_options(-O)
 add_subdirectory(runtime)
 add_subdirectory(graphic)
 
-set(user_program_link_option -e _start -Ttext=0 -s)
+set(user_program_link_option -e __start__ -Ttext=0x1000 -s)
 set(user_program_link_target startup lib syscall_interface)
 
 add_executable(echo echo.cc)

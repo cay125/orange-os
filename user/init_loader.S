@@ -3,8 +3,8 @@
 
 #include "kernel/syscalls/syscall_num_def.h"
 
-.globl _start
-_start:
+.globl __start__
+__start__:
   la a0, init
   la a1, argv
   li a7, SYSCALL_exec

@@ -10,9 +10,9 @@ extern function_t __init_array_end[];
 extern function_t __fini_array_start[];
 extern function_t __fini_array_end[];
 
-extern "C" void _start(int argc, char** argv);
+extern "C" void __start__(int argc, char** argv);
 
-void _start(int argc, char** argv) {
+void __start__(int argc, char** argv) {
   asm volatile  (
     ".option push;"
     ".option norelax;"
