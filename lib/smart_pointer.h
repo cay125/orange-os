@@ -1,5 +1,8 @@
 #pragma once
 
+#include <type_traits>
+#include <utility>
+
 namespace lib {
 
 template <class T>
@@ -15,13 +18,19 @@ class unique_ptr {
     }
   }
 
-  unique_ptr<T>& operator=(unique_ptr<T>&& p) {
-    p.swap(*this);
+  template <class O, std::enable_if_t<std::is_base_of_v<T, O>, bool> = true>
+  unique_ptr<T>& operator=(unique_ptr<O>&& p) {
+    O* ptr = p.release();
+    if (ptr_) {
+      delete ptr_;
+    }
+    ptr_ = ptr;
     return *this;
   }
 
   T* operator->() const {return ptr_;}
   T& operator*() const {return *ptr_;}
+  bool operator!() const {return ptr_ == nullptr;}
 
   void reset() {
     if (ptr_) {
@@ -34,6 +43,12 @@ class unique_ptr {
     T* ptr = p.get();
     p.ptr_ = ptr_;
     ptr_ = ptr;
+  }
+
+  T* release() {
+    T* ptr = ptr_;
+    ptr_ = nullptr;
+    return ptr;
   }
 
   T* get() {

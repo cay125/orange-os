@@ -147,6 +147,14 @@ class vector {
     buffer_ = 0;
   }
 
+  T* data() {
+    return buffer_;
+  }
+
+  const T* data() const {
+    return buffer_;
+  }
+
 private:
   uint32_t size_;
   uint32_t capacity_;

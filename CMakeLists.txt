@@ -59,10 +59,12 @@ endforeach()
 
 set(FS_IMG_SIZE 102400)
 
+file(GLOB resources LIST_DIRECTORIES false user/resource/*)
+
 add_custom_command(
   OUTPUT fs.img
-  COMMAND ${CMAKE_BINARY_DIR}/filesystem/mkfs fs.img ${FS_IMG_SIZE} ${user_target_paths} ${CMAKE_SOURCE_DIR}/user/resource/README.txt
-  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets} ${CMAKE_SOURCE_DIR}/user/resource/README.txt
+  COMMAND ${CMAKE_BINARY_DIR}/filesystem/mkfs fs.img ${FS_IMG_SIZE} ${user_target_paths} ${resources}
+  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets} ${resources}
 )
 
 set(FAT_FS_IMG_SIZE 128000)

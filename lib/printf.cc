@@ -7,7 +7,7 @@
 void printf(const char *fmt, ...) {
 	va_list va;
 	va_start(va, fmt);
-	char out_str[64] = {0};
+	char out_str[128] = {0};
 	char* p = out_str;
 	simple_vsprintf(&p, fmt, va, nullptr);
 	va_end(va);
@@ -23,7 +23,7 @@ void printf(PrintLevel level, const char *fmt, ...) {
   printf("%s", escape_sequences_start[(int)level]);
   va_list va;
 	va_start(va, fmt);
-	char out_str[64] = {0};
+	char out_str[128] = {0};
 	char* p = out_str;
 	simple_vsprintf(&p, fmt, va, nullptr);
 	va_end(va);
