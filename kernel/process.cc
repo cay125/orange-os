@@ -113,6 +113,7 @@ void ProcessTask::CopyMemoryFrom(const ProcessTask* process) {
   used_address_size = process->used_address_size;
   used_address = process->used_address;
   user_sp = process->user_sp;
+  dynamic_info = process->dynamic_info;
 }
 
 static bool CopyMemory(uint64_t* src_root_page,
@@ -152,6 +153,7 @@ bool ProcessTask::CopyFrom(const ProcessTask* src_process) {
   memcpy(frame, src_process->frame, sizeof(*frame));
   frame->kernel_sp = reinterpret_cast<uint64_t>(kernel_sp) + memory_layout::PGSIZE;
   memcpy(current_path, src_process->current_path, strlen(src_process->current_path));
+  dynamic_info = src_process->dynamic_info;
   return true;
 }
 

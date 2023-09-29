@@ -40,7 +40,7 @@ size_t Console::read(char* p, size_t len) {
   return read_cnt;
 }
 
-size_t Console::write(char*p, size_t len) {
+size_t Console::write(const char* p, size_t len) {
   if (!device_->IsWritable()) {
     return 0;
   }

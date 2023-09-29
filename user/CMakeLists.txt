@@ -5,7 +5,7 @@ add_compile_options(-O)
 add_subdirectory(runtime)
 add_subdirectory(graphic)
 
-set(user_program_link_option -e __start__ -Ttext=0x1000 -s)
+set(user_program_link_option -e __start__ -s)
 set(user_program_link_target startup lib syscall_interface)
 
 add_executable(echo echo.cc)
@@ -61,7 +61,7 @@ target_link_options(lcd PRIVATE ${user_program_link_option})
 add_executable(view view.cc)
 generate_asm(view)
 target_link_libraries(view ${user_program_link_target} graphic)
-target_link_options(view PRIVATE ${user_program_link_option})
+target_link_options(view PRIVATE ${user_program_link_option} --no-relax)
 
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)

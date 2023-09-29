@@ -12,6 +12,8 @@ int main(int argc, char** argv) {
     return -1;
   }
 
+  syscall::dlopen("libgraphic.so");
+
   graphic::ImageViewer viewer(argv[1]);
   bool ret = viewer.Init();
   if (!ret) {

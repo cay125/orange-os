@@ -17,8 +17,11 @@ if __name__ == '__main__':
   sys_call_impl = '#include "kernel/syscalls/syscall_num_def.h"\n\n'
   items = os.popen(compile_command).readlines()
   assert(len(funs) == len(items))
+  filter_name = ['dlopen', 'dlclose']
   for index, item in enumerate(items):
     item = item.strip()
+    if funs[index] in filter_name:
+      continue
     sys_call_impl += '.global ' + item + '\n'
     sys_call_impl += item + ':\n'
     sys_call_impl += '  li  a7, SYSCALL_' + funs[index] + '\n'

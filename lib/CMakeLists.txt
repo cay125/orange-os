@@ -8,5 +8,5 @@ add_custom_command(
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/gen_syscall_impl.py ${CMAKE_CURRENT_SOURCE_DIR}/syscall.h ${CMAKE_SOURCE_DIR}/kernel/syscalls/syscall_num_def.h
 )
 
-add_library(syscall_interface syscall.h ${CMAKE_CURRENT_BINARY_DIR}/syscall.S)
+add_library(syscall_interface syscall.h sys_dl.S sys_dl.cc ${CMAKE_CURRENT_BINARY_DIR}/syscall.S)
 

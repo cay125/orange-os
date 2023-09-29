@@ -71,6 +71,22 @@ void SetIntArg(int order, int value) {
   SetRawArg(order, static_cast<uint64_t>(value));
 }
 
+void GetStrArg(int order, char* buf, size_t size) {
+  auto fun = [buf](const char* ubuf, size_t len) mutable -> size_t {
+    for (size_t i = 0; i < len; ++i) {
+      if (ubuf[i]) {
+        *buf = ubuf[i];
+        ++buf;
+      } else {
+        *buf = '\0';
+        return i;
+      }
+    }
+    return len;
+  };
+  safe_copy(GetRawArg(order), size, fun);
+}
+
 }  // namespace comm
 }  // namespace syscall
 }  // naemspace kernel

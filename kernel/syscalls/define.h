@@ -41,6 +41,8 @@ int sys_frame_flush();
 int sys_setup_cursor();
 int sys_move_cursor();
 int sys_detach_framebuffer();
+int sys_dlopen();
+int sys_dlclose();
 
 }  // namespace syscall
 }  // namespace kernel

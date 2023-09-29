@@ -11,11 +11,14 @@
 #include "kernel/config/memory_layout.h"
 #include "kernel/global_channel.h"
 #include "kernel/lock/critical_guard.h"
+#include "kernel/printf.h"
+#include "kernel/process.h"
 #include "kernel/resource_factory.h"
 #include "kernel/scheduler.h"
 #include "kernel/sys_def/device_info.h"
 #include "kernel/sys_def/syscall_err.h"
 #include "kernel/syscalls/define.h"
+#include "kernel/syscalls/dynamic_loader.h"
 #include "kernel/syscalls/utils.h"
 #include "kernel/utils.h"
 #include "kernel/virtual_memory.h"
@@ -58,25 +61,24 @@ int sys_write() {
     printf("sys_write: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
   }
-  auto* root_page = Schedueler::Instance()->ThisProcess()->page_table;
-  riscv::PTE pte = riscv::PTE::None;
-  auto buf = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1), &pte));
-  if (!buf || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
-    printf("sys_write: Trying to write from invalid memory\n");
-    return -1;
-  }
   auto size = comm::GetIntegralArg<size_t>(2);
   if (fd->file_type == fs::FileType::regular_file || fd->file_type == fs::FileType::directory) {
     fs::FileStream file_stream(fd->inode);
     file_stream.Seek(fd->offset);
-    size = file_stream.write(buf, size);
+    auto fun = [&file_stream](const char* buf, size_t len) -> size_t {
+      return file_stream.write(buf, len);
+    };
+    size = safe_copy(comm::GetRawArg(1), size, fun);
     fd->offset += size;
   } else if (fd->file_type == fs::FileType::device) {
     auto* r = ResourceFactory::Instance()->GetResource(fd->inode.major, fd->inode.minor);
     if (!r) {
       return -1;
     }
-    size = r->write(buf, size);
+    auto fun = [r](const char* buf, size_t len) -> size_t {
+      return r->write(buf, len);
+    };
+    size = safe_copy(comm::GetRawArg(1), size, fun);
   } else if (fd->file_type == fs::FileType::none) {
     printf("sys_write: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
@@ -91,25 +93,24 @@ int sys_read() {
     printf("sys_read: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
   }
-  auto* root_page = Schedueler::Instance()->ThisProcess()->page_table;
-  riscv::PTE pte = riscv::PTE::None;
-  auto buf = reinterpret_cast<char*>(VirtualMemory::Instance()->VAToPA(root_page, comm::GetRawArg(1), &pte));
-  if (!buf || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
-    printf("sys_read: Trying to read data to invalid memory\n");
-    return -1;
-  }
   auto size = comm::GetIntegralArg<size_t>(2);
   if (fd->file_type == fs::FileType::regular_file || fd->file_type == fs::FileType::directory) {
     fs::FileStream file_stream(fd->inode);
     file_stream.Seek(fd->offset);
-    size = file_stream.Read(buf, size);
+    auto fun = [&file_stream](char* buf, size_t len) -> size_t {
+      return file_stream.Read(buf, len);
+    };
+    size = safe_copy(comm::GetRawArg(1), size, fun);
     fd->offset += size;
   } else if (fd->file_type == fs::FileType::device) {
     auto* r = ResourceFactory::Instance()->GetResource(fd->inode.major, fd->inode.minor);
     if (!r) {
       return -1;
     }
-    size = r->read(buf, size);
+    auto fun = [r](char* buf, size_t len) -> size_t {
+      return r->read(buf, len);
+    };
+    size = safe_copy(comm::GetRawArg(1), size, fun);
   } else if (fd->file_type == fs::FileType::none) {
     printf("sys_read: Invalid file_descriptor: %d\n", comm::GetIntArg(0));
     return -1;
@@ -414,6 +415,47 @@ int sys_detach_framebuffer() {
   if (!ret) {
     return -1;
   }
+  return 0;
+}
+
+int sys_dlopen() {
+  ProcessTask* process = Schedueler::Instance()->ThisProcess();
+  if (process->dynamic_info.dynamic_vaddr == 0 || process->dynamic_info.dynamic_size == 0) {
+    printf("dlopen: No dynamic symbol needed\n");
+    return 0;
+  }
+  char path_name[64];
+  comm::GetStrArg(0, path_name, sizeof(path_name));
+  fs::InodeDef inode{};
+  auto inode_index = fs::Open(path_name, &inode);
+  if (inode_index < 0) {
+    printf("dlopen: Invalid path: %s\n", path_name);
+    return -1;
+  }
+  printf("dlopen: Loading symbol from %s\n", path_name);
+  CriticalGuard guard;
+  fs::FileStream filestream(inode);
+  uint64_t max_mem_addr = 0;
+  for (size_t i = 0; i < process->used_address_size; i++) {
+    if (process->used_address[i].second > max_mem_addr) {
+      max_mem_addr = process->used_address[i].second;
+    }
+  }
+  DynamicLoader dynamic_loader(&filestream, process, VirtualMemory::AddrCastUp(max_mem_addr));
+  DynamicInfo dynamic_info;
+  if (!dynamic_loader.Load(ET_DYN, nullptr, &dynamic_info)) {
+    return -1;
+  }
+  uint64_t init_array_beg, init_array_end;
+  if (!dynamic_loader.LoadDynamicInfo(&dynamic_info, &init_array_beg, &init_array_end)) {
+    return -1;
+  }
+  process->frame->a1 = init_array_beg;
+  process->frame->a2 = init_array_end;
+  return 0;
+}
+
+int sys_dlclose() {
   return 0;
 }
 

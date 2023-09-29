@@ -15,6 +15,7 @@ uint64_t GetRawArg(int order);
 void SetRawArg(int order, uint64_t value);
 int GetIntArg(int order);
 void SetIntArg(int order, int value);
+void GetStrArg(int order, char* buf, size_t size);
 
 template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 T GetIntegralArg(int order) {
@@ -30,7 +31,7 @@ T* GetAddrArg(int order) {
   auto* process = Schedueler::Instance()->ThisProcess();
   riscv::PTE pte = riscv::PTE::None;
   auto pa = VirtualMemory::Instance()->VAToPA(process->page_table, user_addr, &pte);
-  if (!pa || !(pte & riscv::PTE::U) || (pte & riscv::PTE::X)) {
+  if (!pa || !(pte & riscv::PTE::U)) {
     return nullptr;
   }
   return reinterpret_cast<T*>(pa);

@@ -31,6 +31,8 @@ int frame_flush();
 int setup_cursor(std::array<uint8_t, 64 * 64 * 4>* cursor_image);
 int move_cursor(uint32_t x, uint32_t y);
 int detach_framebuffer();
+int dlopen(const char* path);
+int dlclose();
 
 }  // namespace syscall
 

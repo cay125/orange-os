@@ -16,7 +16,7 @@ class Console : Resource {
   Console(driver::BasicDevice* device);
   virtual void get_name(char* name) override;
   size_t read(char* p, size_t len) override;
-  size_t write(char*p, size_t len) override;
+  size_t write(const char* p, size_t len) override;
   
 
  public:

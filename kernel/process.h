@@ -51,6 +51,11 @@ class Channel {
   const void* data_ = nullptr;
 };
 
+struct DynamicInfo {
+  uint64_t dynamic_vaddr = 0;
+  uint64_t dynamic_size = 0;
+};
+
 struct ProcessTask {
   ProcessTask() : owned_channel(this) {}
   SpinLock lock;
@@ -70,6 +75,7 @@ struct ProcessTask {
   char current_path[128] = "/";
   Channel owned_channel;
   int exit_code = 0;
+  DynamicInfo dynamic_info;
   bool Init(bool need_init_kernel_info = true);
   void FreePageTable(bool need_free_kernel_page = true);
   void CopyMemoryFrom(const ProcessTask* process);
