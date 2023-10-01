@@ -2,9 +2,9 @@
 #include "filesystem/inode_def.h"
 #include "lib/common.h"
 #include "lib/lib.h"
-#include "lib/smart_pointer.h"
+#include "lib/stl/smart_pointer.h"
 #include "lib/syscall.h"
-#include "lib/vector.h"
+#include "lib/stl/vector.h"
 
 namespace graphic {
 

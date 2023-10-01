@@ -1,9 +1,9 @@
 #pragma once
 
 #include "filesystem/inode_def.h"
-#include "lib/smart_pointer.h"
+#include "lib/stl/smart_pointer.h"
 #include "lib/types.h"
-#include "lib/vector.h"
+#include "lib/stl/vector.h"
 
 namespace graphic {
 

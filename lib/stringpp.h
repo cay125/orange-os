@@ -2,7 +2,7 @@
 
 #include "lib/memory.h"
 #include "lib/types.h"
-#include "lib/vector.h"
+#include "lib/stl/vector.h"
 
 namespace lib {
 

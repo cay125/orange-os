@@ -1,9 +1,9 @@
 #include "filesystem/inode_def.h"
 #include "lib/lib.h"
-#include "lib/smart_pointer.h"
+#include "lib/stl/smart_pointer.h"
 #include "lib/stringpp.h"
 #include "lib/syscall.h"
-#include "lib/vector.h"
+#include "lib/stl/vector.h"
 
 int main(int argc, char** argv) {
   if (argc < 3) {

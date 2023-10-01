@@ -93,7 +93,7 @@ struct MetaData {
   uint64_t block_index;
 };
 
-class BlockDevice : public Device {
+class BlockDevice : public DeviceViaMMIO {
  public:
   BlockDevice();
   bool Init(uint64_t virtio_addr) override;
@@ -133,9 +133,6 @@ class BlockDevice : public Device {
   }
 
  private:
-  bool Validate();
-
-  uint64_t addr_ = 0;
   uint64_t capacity_ = 0;
 };
 

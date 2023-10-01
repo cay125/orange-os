@@ -1,6 +1,6 @@
 #include "kernel/sys_def/device_info.h"
 #include "lib/lib.h"
-#include "lib/smart_pointer.h"
+#include "lib/stl/smart_pointer.h"
 #include "lib/syscall.h"
 #include "user/graphic/image_viewer.h"
 #include <array>

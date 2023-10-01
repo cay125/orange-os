@@ -179,6 +179,8 @@ constexpr int max_queue_num = 2;
 
 template<class... T>
 class mmio_transport;
+template <class F, size_t N, size_t M>
+class mmio_negotiater;
 class Device : public BasicDevice {
   template<class... T>
   friend class mmio_transport;
@@ -214,6 +216,20 @@ class Device : public BasicDevice {
   uint32_t last_seen_used_idx_[max_queue_num] = {0};
   kernel::SpinLock lk_[max_queue_num];
   kernel::Channel channel_;
+};
+
+class DeviceViaMMIO : public Device {
+  template <class F, size_t N, size_t M>
+  friend class mmio_negotiater;
+ public:
+  DeviceViaMMIO(uint64_t addr) : Device(), addr_(addr) {
+
+  }
+
+ protected:
+  bool Validate();
+
+  uint64_t addr_;
 };
 
 }  // namespace virtio

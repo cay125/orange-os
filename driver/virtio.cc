@@ -1,5 +1,6 @@
 #include "driver/virtio.h"
 
+#include "kernel/printf.h"
 #include "kernel/utils.h"
 #include "lib/string.h"
 
@@ -35,6 +36,17 @@ void Device::FreeDesc(std::initializer_list<uint32_t> desc_list, int queue_index
   for (auto desc : desc_list) {
     FreeDesc(desc, queue_index);
   }
+}
+
+bool DeviceViaMMIO::Validate() {
+  if (MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::MagicValue) != magic_num)
+    return false;
+  if (MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::Version) != device_version::Legacy)
+    return false;
+  if (MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::DeviceID) != GetDeviceId())
+    return false;
+  kernel::printf("[virtio] device: %#x vendor id: %#x\n", addr_, MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::VendorID));
+  return true;
 }
 
 }  // namespace virtio

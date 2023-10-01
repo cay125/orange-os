@@ -10,8 +10,8 @@ namespace virtio {
 namespace gpu {
 
 enum class feature_bit : uint64_t {
-  VIRTIO_GPU_F_VIRGL = 0,
-  VIRTIO_GPU_F_EDID = 1,
+  VIRTIO_GPU_F_VIRGL = 1uL << 0,
+  VIRTIO_GPU_F_EDID = 1uL << 1,
 };
 
 struct virtio_gpu_config {
@@ -165,7 +165,7 @@ using CursorImage = std::array<uint8_t, cursor_image_size>;
 
 }
 
-class GPUDevice : public Device {
+class GPUDevice : public DeviceViaMMIO {
  public:
   GPUDevice();
   bool Init(uint64_t virtio_addr) override;
@@ -188,10 +188,8 @@ class GPUDevice : public Device {
   void TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, uint32_t resource_id, uint32_t flags = 0);
   void ResourceFlush(const gpu::virtio_gpu_rect& rect, uint32_t resource_id);
   void ResourceDestroy(uint32_t resource_id);
-  bool Validate();
   void UpdateCursor(uint32_t resource_id, uint32_t scanout_id, uint32_t pos_x, uint32_t pos_y, uint32_t hot_x, uint32_t hot_y, bool is_move = false);
 
-  uint64_t addr_ = 0;
   gpu::virtio_gpu_rect screen_rect_{};
   // The mouse cursor image must be 64x64 in size
   const gpu::virtio_gpu_rect cursor_rect_{0, 0, 64, 64};

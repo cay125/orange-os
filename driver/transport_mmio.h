@@ -22,6 +22,9 @@ class mmio_transport {
     request(reqs...);
   }
 
+  mmio_transport(const mmio_transport&) = delete;
+  mmio_transport& operator= (const mmio_transport&) = delete;
+
   void set_indirect_flag(uint32_t desc_index) {
     queue_->desc[desc_index].flags |= virtq_desc_flag::VIRTQ_DESC_F_INDIRECT;
   }
@@ -55,26 +58,16 @@ class mmio_transport {
  private:
   template <class T1, class... T2, std::enable_if_t<std::is_pointer_v<T1>, bool> = true>
   void request(T1 req, T2... reqs) {
-    queue_->desc[descs_[desc_index_]].addr = reinterpret_cast<uint64_t>(req);
-    queue_->desc[descs_[desc_index_]].len = sizeof(*req);
-    queue_->desc[descs_[desc_index_]].flags = virtq_desc_flag::VIRTQ_DESC_F_NEXT;
-    if (!std::is_const_v<std::remove_pointer_t<T1>>) {
-      queue_->desc[descs_[desc_index_]].flags |= virtq_desc_flag::VIRTQ_DESC_F_WRITE;
-    }
-    queue_->desc[descs_[desc_index_]].next = descs_[desc_index_ + 1];
+    virtq_desc_flag flag = std::is_const_v<std::remove_pointer_t<T1>> ? virtq_desc_flag::VIRTQ_DESC_F_NEXT : virtq_desc_flag::VIRTQ_DESC_F_NEXT | virtq_desc_flag::VIRTQ_DESC_F_WRITE;
+    fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, descs_[desc_index_ + 1]);
     desc_index_ += 1;
     request(reqs...);
   }
 
   template <class REQ, std::enable_if_t<std::is_pointer_v<REQ>, bool> = true>
   void request(REQ req) {
-    queue_->desc[descs_[desc_index_]].addr = reinterpret_cast<uint64_t>(req);
-    queue_->desc[descs_[desc_index_]].len = sizeof(*req);
-    queue_->desc[descs_[desc_index_]].flags = virtq_desc_flag::NONE;
-    if (!std::is_const_v<std::remove_pointer_t<REQ>>) {
-      queue_->desc[descs_[desc_index_]].flags |= virtq_desc_flag::VIRTQ_DESC_F_WRITE;
-    }
-    queue_->desc[descs_[desc_index_]].next = 0;
+    virtq_desc_flag flag = std::is_const_v<std::remove_pointer_t<REQ>> ? virtq_desc_flag::NONE : virtq_desc_flag::VIRTQ_DESC_F_WRITE;
+    fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, 0);
   }
 
   Device* device_;
