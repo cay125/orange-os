@@ -63,6 +63,11 @@ generate_asm(view)
 target_link_libraries(view ${user_program_link_target} graphic)
 target_link_options(view PRIVATE ${user_program_link_option} --no-relax)
 
+add_executable(mandelbrot mandelbrot.cc)
+generate_asm(mandelbrot)
+target_link_libraries(mandelbrot ${user_program_link_target})
+target_link_options(mandelbrot PRIVATE ${user_program_link_option})
+
 add_executable(init_loader init_loader.S)
 target_compile_options(init_loader PRIVATE -fno-stack-protector -fno-pie -no-pie -mno-relax -fno-omit-frame-pointer)
 target_link_options(init_loader PRIVATE ${user_program_link_option})
