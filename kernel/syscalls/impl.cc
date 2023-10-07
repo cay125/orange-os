@@ -209,6 +209,16 @@ int sys_open() {
   return -1;
 }
 
+int sys_close() {
+  fs::FileDescriptor* fd = nullptr;
+  GetFileDescriptor(comm::GetIntArg(0), &fd);
+  if (!fd) {
+    return -1;
+  }
+  memset(fd, 0, sizeof(fs::FileDescriptor));
+  return 0;
+}
+
 int sys_fstat() {
   fs::FileDescriptor* fd = nullptr;
   GetFileDescriptor(comm::GetIntArg(0), &fd);

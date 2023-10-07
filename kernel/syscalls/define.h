@@ -24,6 +24,7 @@ int sys_read();
 int sys_exec();
 int sys_sleep();
 int sys_open();
+int sys_close();
 int sys_fstat();
 int sys_mknod();
 int sys_getpid();

@@ -46,10 +46,12 @@ void DoList(const char* path) {
       memcpy(full_name + path_len, dir->name, strlen(dir->name) + 1);
       int child_fd = syscall::open(full_name);
       ShowFile(full_name, child_fd);
+      syscall::close(child_fd);
     }
   } else {
     ShowFile(path, fd, &file_state);
   }
+  syscall::close(fd);
 }
 
 int main(int argc, char** argv) {

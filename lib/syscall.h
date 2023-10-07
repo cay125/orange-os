@@ -11,6 +11,7 @@ int write(int fd, const void* src, int size);
 int fork();
 int sleep(int seconds);
 int open(const char*);
+int close(int fd);
 ssize_t read(int fd, char* buf, size_t count);
 int fstat(int fd, void* f_stat);
 int exec(const char* path, const char** argv);
