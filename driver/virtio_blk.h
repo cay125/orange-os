@@ -98,7 +98,8 @@ class BlockDevice : public DeviceViaMMIO {
   BlockDevice();
   bool Init(uint64_t virtio_addr) override;
   device_id GetDeviceId() override;
-  void ProcessInterrupt() override;
+  void UsedBufferNotify() override;
+  void ConfigChangeNotify() override;
 
   template <Operation op, typename T>
   auto* wrap_blk_data(T* blk_data) {

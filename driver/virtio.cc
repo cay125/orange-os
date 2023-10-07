@@ -49,5 +49,16 @@ bool DeviceViaMMIO::Validate() {
   return true;
 }
 
+void DeviceViaMMIO::ProcessInterrupt() {
+  auto interrupt_status = MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::InterruptStatus);
+  MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::InterruptACK, interrupt_status & 0x3);
+  if (interrupt_status & interrupt_status::used_buffer_notification) {
+    UsedBufferNotify();
+  }
+  if (interrupt_status & interrupt_status::configuration_change_notification) {
+    ConfigChangeNotify();
+  }
+}
+
 }  // namespace virtio
 }  // namespace driver

@@ -33,10 +33,8 @@ bool BlockDevice::Init(uint64_t virtio_addr) {
   return true;
 }
 
-void BlockDevice::ProcessInterrupt() {
+void BlockDevice::UsedBufferNotify() {
   kernel::CriticalGuard guard(&lk_[0]);
-  auto interrupt_status = MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::InterruptStatus);
-  MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::InterruptACK, interrupt_status & 0x3);
   __sync_synchronize();
   while (last_seen_used_idx_[0] != queue[0]->used.idx) {
     __sync_synchronize();
@@ -46,6 +44,8 @@ void BlockDevice::ProcessInterrupt() {
     kernel::Schedueler::Instance()->Wakeup(&channel_);
   }
 }
+
+void BlockDevice::ConfigChangeNotify() {}
 
 uint64_t BlockDevice::Capacity() {
   return capacity_;

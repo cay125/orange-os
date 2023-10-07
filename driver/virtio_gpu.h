@@ -170,7 +170,8 @@ class GPUDevice : public DeviceViaMMIO {
   GPUDevice();
   bool Init(uint64_t virtio_addr) override;
   device_id GetDeviceId() override;
-  void ProcessInterrupt() override;
+  void UsedBufferNotify() override;
+  void ConfigChangeNotify() override;
 
   gpu::virtio_gpu_resp_display_info GetDisplayInfo();
   bool SetupFramebuffer(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id, uint64_t addr, size_t size);

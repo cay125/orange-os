@@ -22,6 +22,9 @@ set(CMAKE_C_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <CMAKE_C_LINK_FLAGS> <LINK_FLAGS>
 set(CMAKE_CXX_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> <LINK_LIBRARIES> -o <TARGET>")
 set(CMAKE_ASM_LINK_EXECUTABLE "${TOOL_PREFIX}-ld <LINK_FLAGS> <OBJECTS> <LINK_LIBRARIES> -o <TARGET>")
 
+# for asm only shared lib
+set(CMAKE_ASM_CREATE_SHARED_LIBRARY ${CMAKE_C_CREATE_SHARED_LIBRARY})
+
 # diable rpath option while linking shared lib
 set(CMAKE_SKIP_RPATH ON)
 
@@ -54,9 +57,14 @@ add_subdirectory(arch)
 add_subdirectory(tools)
 
 get_property(user_targets DIRECTORY user PROPERTY BUILDSYSTEM_TARGETS)
+get_property(graph_targets DIRECTORY user/graphic PROPERTY BUILDSYSTEM_TARGETS)
 
 foreach(user_target ${user_targets})
   list(APPEND user_target_paths $<TARGET_FILE:${user_target}>)
+endforeach()
+
+foreach(graph_target ${graph_targets})
+  list(APPEND graph_targets_paths $<TARGET_FILE:${graph_targets}>)
 endforeach()
 
 set(FS_IMG_SIZE 102400)
@@ -65,8 +73,8 @@ file(GLOB resources LIST_DIRECTORIES false user/resource/*)
 
 add_custom_command(
   OUTPUT fs.img
-  COMMAND ${CMAKE_BINARY_DIR}/filesystem/mkfs fs.img ${FS_IMG_SIZE} ${user_target_paths} ${resources}
-  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets} ${resources}
+  COMMAND ${CMAKE_BINARY_DIR}/filesystem/mkfs fs.img ${FS_IMG_SIZE} ${user_target_paths} ${graph_targets_paths} ${resources}
+  DEPENDS gen_mkfs ${CMAKE_BINARY_DIR}/filesystem/mkfs ${user_targets} ${graph_targets} ${resources}
 )
 
 set(FAT_FS_IMG_SIZE 128000)
@@ -97,6 +105,7 @@ set(QEMU_OPTION
   -drive if=none,id=blk1,file=fat_fs.img,format=raw
   -device virtio-blk-device,drive=blk1,bus=virtio-mmio-bus.1
   -device virtio-gpu-device,bus=virtio-mmio-bus.2,xres=${XRES},yres=${YRES}
+  -device virtio-mouse-device,bus=virtio-mmio-bus.3,id=input0
 )
 
 add_custom_target(

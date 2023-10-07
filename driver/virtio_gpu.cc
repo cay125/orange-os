@@ -46,11 +46,9 @@ device_id GPUDevice::GetDeviceId() {
   return device_id::GPU_device;
 }
 
-void GPUDevice::ProcessInterrupt() {
+void GPUDevice::UsedBufferNotify() {
   kernel::CriticalGuard guard1(&lk_[0]);
   kernel::CriticalGuard guard2(&lk_[1]);
-  auto interrupt_status = MEMORY_MAPPED_IO_R_WORD(addr_ + mmio_addr::InterruptStatus);
-  MEMORY_MAPPED_IO_W_WORD(addr_ + mmio_addr::InterruptACK, interrupt_status & 0x3);
   __sync_synchronize();
   for (int i = 0; i < 2; ++i) {
     while (last_seen_used_idx_[i] != queue[i]->used.idx) {
@@ -62,6 +60,8 @@ void GPUDevice::ProcessInterrupt() {
     }
   }
 }
+
+void GPUDevice::ConfigChangeNotify() {}
 
 #define CHECK_TYPE(hdr, target_type) check_type(__PRETTY_FUNCTION__, hdr, target_type);
 

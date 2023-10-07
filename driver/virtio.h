@@ -48,6 +48,11 @@ enum class mmio_addr : uint64_t {
   Config = 0x100,
 };
 
+enum class interrupt_status : uint32_t {
+  used_buffer_notification = 1u << 0,
+  configuration_change_notification = 1u << 1,
+};
+
 enum class device_version : uint8_t {
   None = 0,
   Legacy = 1,  // before v1.1
@@ -80,7 +85,7 @@ enum class device_id : uint8_t {
   memory_device = 24,
 };
 
-enum class status_field {
+enum class status_field : uint32_t {
   ACKNOWLEDGE = 1,
   DRIVER = 2,
   DRIVER_OK = 4,
@@ -195,7 +200,7 @@ class Device : public BasicDevice {
     kernel::CriticalGuard guard(&lk_[queue_index]);
     for (size_t i = 0; i < descs->size(); ++i) {
       (*descs)[i] = AllocDesc(queue_index);
-      if ((*descs)[i] < 0) {
+      if ((*descs)[i] == 0xffffffff) {
         for (size_t j = 0; j < i; ++j) {
           FreeDesc((*descs)[j], queue_index);
         }
@@ -226,8 +231,12 @@ class DeviceViaMMIO : public Device {
 
   }
 
+  void ProcessInterrupt() override;
+
  protected:
   bool Validate();
+  virtual void UsedBufferNotify() = 0;
+  virtual void ConfigChangeNotify() = 0;
 
   uint64_t addr_;
 };
