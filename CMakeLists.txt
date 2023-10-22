@@ -106,6 +106,9 @@ set(QEMU_OPTION
   -device virtio-blk-device,drive=blk1,bus=virtio-mmio-bus.1
   -device virtio-gpu-device,bus=virtio-mmio-bus.2,xres=${XRES},yres=${YRES}
   -device virtio-mouse-device,bus=virtio-mmio-bus.3,id=input0
+  -device virtio-net-device,bus=virtio-mmio-bus.4,netdev=net0
+  -netdev user,id=net0,hostfwd=tcp::10086-:10086
+  -object filter-dump,id=filter1,netdev=net0,file=dump.dat
 )
 
 add_custom_target(

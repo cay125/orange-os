@@ -20,6 +20,7 @@ void globalinit() {
   set_priority_hander(irq::VIRTIO1_IRQ, 1);
   set_priority_hander(irq::VIRTIO2_IRQ, 1);
   set_priority_hander(irq::VIRTIO3_IRQ, 1);
+  set_priority_hander(irq::VIRTIO4_IRQ, 1);
   set_priority_hander(irq::UARRT0_IRQ, 1);
 }
 
@@ -31,6 +32,7 @@ void hartinit(int hart_id) {
   enabled_irq |= 1 << literal(irq::VIRTIO1_IRQ);
   enabled_irq |= 1 << literal(irq::VIRTIO2_IRQ);
   enabled_irq |= 1 << literal(irq::VIRTIO3_IRQ);
+  enabled_irq |= 1 << literal(irq::VIRTIO4_IRQ);
   enabled_irq |= 1 << literal(irq::UARRT0_IRQ);
   MEMORY_MAPPED_IO_W_WORD(memory_layout::PLIC_ENABLE(hart_id), enabled_irq);
   MEMORY_MAPPED_IO_W_WORD(memory_layout::PLIC_PRIORITY_THRESH(hart_id), 0);

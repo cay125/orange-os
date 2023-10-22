@@ -47,6 +47,8 @@ EnumArray<DeviceInfo, static_cast<std::underlying_type_t<DeviceList>>(DeviceList
   DeviceInfo{memory_layout::VIRTIO2, riscv::plic::irq::VIRTIO2_IRQ},
   // mouse0
   DeviceInfo{memory_layout::VIRTIO3, riscv::plic::irq::VIRTIO3_IRQ},
+  // net0
+  DeviceInfo{memory_layout::VIRTIO4, riscv::plic::irq::VIRTIO4_IRQ},
   // uart0
   DeviceInfo{memory_layout::UART0, riscv::plic::irq::UARRT0_IRQ},
 };
@@ -82,6 +84,9 @@ driver::BasicDevice* DeviceFactory::GetDevice(DeviceList device) {
   }
   if (device == DeviceList::mouse0) {
     return &input_device0_;
+  }
+  if (device == DeviceList::net0) {
+    return &net0_;
   }
   return nullptr;
 }

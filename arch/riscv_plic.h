@@ -15,6 +15,7 @@ enum class irq : uint8_t {
   VIRTIO1_IRQ = 2,
   VIRTIO2_IRQ = 3,
   VIRTIO3_IRQ = 4,
+  VIRTIO4_IRQ = 5,
   UARRT0_IRQ = 10,
 };
 
