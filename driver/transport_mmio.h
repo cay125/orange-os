@@ -19,7 +19,7 @@ namespace virtio {
 template<typename... T>
 class mmio_transport {
  public:
-  mmio_transport(Device* device, int queue_index, uint64_t addr, T... reqs) : device_(device), desc_index_(0), queue_index_(queue_index), queue_(device_->queue[queue_index]), addr_(addr) {
+  mmio_transport(DeviceViaMMIO* device, int queue_index, T... reqs) : device_(device), desc_index_(0), queue_index_(queue_index), queue_(device_->queue[queue_index]), addr_(device->addr_) {
     bool ret = device_->AllocMultiDesc(&descs_, queue_index);
     if (!ret) {
       kernel::printf("mmio_transport: alloc desc failed\n");
@@ -89,7 +89,7 @@ class mmio_transport {
     }
   }
 
-  Device* device_;
+  DeviceViaMMIO* device_;
   int desc_index_;
   bool desc_alloc_succ = false;
   std::array<uint32_t, sizeof...(T)> descs_;

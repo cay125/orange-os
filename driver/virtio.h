@@ -199,8 +199,6 @@ class mmio_transport;
 template <class F, size_t N, size_t M>
 class mmio_negotiater;
 class Device : public BasicDevice {
-  template<class... T>
-  friend class mmio_transport;
  public:
   Device();
   virtual device_id GetDeviceId() = 0;
@@ -236,6 +234,8 @@ class Device : public BasicDevice {
 };
 
 class DeviceViaMMIO : public Device {
+  template<class... T>
+  friend class mmio_transport;
   template <class F, size_t N, size_t M>
   friend class mmio_negotiater;
  public:

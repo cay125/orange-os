@@ -83,7 +83,7 @@ gpu::virtio_gpu_resp_display_info GPUDevice::GetDisplayInfo() {
   gpu::virtio_gpu_ctrl_hdr header{};
   header.type = lib::common::literal(gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_CMD_GET_DISPLAY_INFO);
   gpu::virtio_gpu_resp_display_info display_info{};
-  mmio_transport transport(this, 0, addr_, &std::as_const(header), &display_info);
+  mmio_transport transport(this, 0, &std::as_const(header), &display_info);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&display_info.hdr, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_DISPLAY_INFO);
@@ -103,7 +103,7 @@ void GPUDevice::Create2dResource(uint32_t resource_id, uint32_t width, uint32_t 
     height
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &std::as_const(create_info), &header);
+  mmio_transport transport(this, 0, &std::as_const(create_info), &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
@@ -150,7 +150,7 @@ void GPUDevice::UpdateCursor(uint32_t resource_id, uint32_t scanout_id, uint32_t
     hot_y,
     0
   };
-  mmio_transport transport(this, 1, addr_, &cursor);
+  mmio_transport transport(this, 1, &cursor);
   transport.trigger_notify();
   transport.wait_complete();
 }
@@ -204,7 +204,7 @@ void GPUDevice::ResourceAttachBacking(uint32_t resource_id, uint64_t addr, size_
 
   gpu::virtio_gpu_ctrl_hdr header{};
   fill_desc(&indirect_desc_[page_num + 1], &header, virtq_desc_flag::VIRTQ_DESC_F_WRITE, 0);
-  mmio_transport transport(this, 0, addr_, &std::as_const(indirect_desc_));
+  mmio_transport transport(this, 0, &std::as_const(indirect_desc_));
   transport.set_indirect_flag(0);
   transport.trigger_notify();
   transport.wait_complete();
@@ -225,7 +225,7 @@ void GPUDevice::ResourceDetachBacking(uint32_t resource_id) {
     0
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &detach, &header);
+  mmio_transport transport(this, 0, &detach, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
@@ -239,7 +239,7 @@ void GPUDevice::SetScanout(const gpu::virtio_gpu_rect& rect, uint32_t scanout_id
     resource_id
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &set_scanout, &header);
+  mmio_transport transport(this, 0, &set_scanout, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
@@ -280,7 +280,7 @@ void GPUDevice::TransferTo2D(const gpu::virtio_gpu_rect& rect, uint64_t offset, 
     0
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &transfer, &header);
+  mmio_transport transport(this, 0, &transfer, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
@@ -297,7 +297,7 @@ void GPUDevice::ResourceFlush(const gpu::virtio_gpu_rect& rect, uint32_t resourc
     0
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &resource_flush, &header);
+  mmio_transport transport(this, 0, &resource_flush, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);
@@ -310,7 +310,7 @@ void GPUDevice::ResourceDestroy(uint32_t resource_id) {
     0
   };
   gpu::virtio_gpu_ctrl_hdr header{};
-  mmio_transport transport(this, 0, addr_, &unref, &header);
+  mmio_transport transport(this, 0, &unref, &header);
   transport.trigger_notify();
   transport.wait_complete();
   CHECK_TYPE(&header, gpu::virtio_gpu_ctrl_type::VIRTIO_GPU_RESP_OK_NODATA);

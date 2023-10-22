@@ -27,7 +27,7 @@ bool InputDevice::Init(uint64_t virtio_addr) {
   kernel::printf("[virtio] device: %#x input_device name: %s\n", addr_, config_->u.string);
 
   for (uint32_t i = 0; i < queue_buffer_size; ++i) {
-    mmio_transport transport(this, 0, addr_, &input_event_[i]);
+    mmio_transport transport(this, 0, &input_event_[i]);
     transport.trigger_notify();
   }
 

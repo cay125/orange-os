@@ -25,7 +25,7 @@ bool NetDevice::Init(uint64_t virtio_addr) {
   kernel::printf("[virtio] device: %#x net_device mac_addr: %x %x %x %x %x %x\n", addr_, mac_info_[0], mac_info_[1], mac_info_[2], mac_info_[3], mac_info_[4], mac_info_[5]);
 
   for (uint32_t i = 0; i < queue_buffer_size; ++i) {
-    mmio_transport transport(this, receive_queue_ind, addr_, rx_buffer_[i].Data());
+    mmio_transport transport(this, receive_queue_ind, rx_buffer_[i].Data());
     transport.trigger_notify();
   }
 
@@ -87,7 +87,7 @@ void NetDevice::Send(const uint8_t* data, size_t size) {
     return;
   } else {
     const auto data_pair = std::make_pair(data, size);
-    mmio_transport transport(this, send_queue_ind, addr_, &hdr, &data_pair);
+    mmio_transport transport(this, send_queue_ind, &hdr, &data_pair);
     transport.trigger_notify();
     auto descs = transport.get_descs();
     delayed_tx_desc[descs[0]] = descs;

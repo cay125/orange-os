@@ -117,7 +117,7 @@ class BlockDevice : public DeviceViaMMIO {
     }
     const blk::virtio_blk_req req{op == Operation::read ? blk::req_type::VIRTIO_BLK_T_IN : blk::req_type::VIRTIO_BLK_T_OUT, 0, meta_data->block_index};
     blk::virtio_blk_resp resp;
-    mmio_transport transport(this, 0, addr_, &req, wrap_blk_data<op>(meta_data->buf), &resp);
+    mmio_transport transport(this, 0, &req, wrap_blk_data<op>(meta_data->buf), &resp);
     transport.trigger_notify();
     transport.wait_complete();
     if (resp.status != blk::status_type::VIRTIO_BLK_S_OK) {
