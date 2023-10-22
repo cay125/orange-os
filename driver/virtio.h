@@ -120,6 +120,18 @@ void fill_desc(virtq_desc* desc, T* addr, virtq_desc_flag flag, uint16_t next) {
   }
 }
 
+template <class T>
+void fill_desc(virtq_desc* desc, T* addr, size_t size, virtq_desc_flag flag, uint16_t next) {
+  desc->addr = reinterpret_cast<uint64_t>(addr);
+  desc->len = size;
+  desc->flags = flag;
+  if (flag & virtq_desc_flag::VIRTQ_DESC_F_NEXT) {
+    desc->next = next;
+  } else {
+    desc->next = 0;
+  }
+}
+
 enum class virtq_avail_flag : uint16_t {
   NONE = 0,
   VIRTQ_AVAIL_F_NO_INTERRUPT = 1,

@@ -5,6 +5,13 @@
 #include "kernel/scheduler.h"
 #include <array>
 #include <type_traits>
+#include <utility>
+
+template<typename T>
+struct is_pair_t : std::false_type {};
+
+template<typename T1, typename T2>
+struct is_pair_t<std::pair<T1, T2>> : std::true_type {};
 
 namespace driver {
 namespace virtio {
@@ -55,11 +62,19 @@ class mmio_transport {
     }
   }
 
+  std::array<uint32_t, sizeof...(T)> get_descs() const {
+    return descs_;
+  }
+
  private:
   template <class T1, class... T2, std::enable_if_t<std::is_pointer_v<T1>, bool> = true>
   void request(T1 req, T2... reqs) {
     virtq_desc_flag flag = std::is_const_v<std::remove_pointer_t<T1>> ? virtq_desc_flag::VIRTQ_DESC_F_NEXT : virtq_desc_flag::VIRTQ_DESC_F_NEXT | virtq_desc_flag::VIRTQ_DESC_F_WRITE;
-    fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, descs_[desc_index_ + 1]);
+    if constexpr (!is_pair_t<std::decay_t<std::remove_pointer_t<T1>>>::value) {
+      fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, descs_[desc_index_ + 1]);
+    } else {
+      fill_desc(&queue_->desc[descs_[desc_index_]], req->first, req->second, flag, descs_[desc_index_ + 1]);
+    }
     desc_index_ += 1;
     request(reqs...);
   }
@@ -67,7 +82,11 @@ class mmio_transport {
   template <class REQ, std::enable_if_t<std::is_pointer_v<REQ>, bool> = true>
   void request(REQ req) {
     virtq_desc_flag flag = std::is_const_v<std::remove_pointer_t<REQ>> ? virtq_desc_flag::NONE : virtq_desc_flag::VIRTQ_DESC_F_WRITE;
-    fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, 0);
+    if constexpr (!is_pair_t<std::decay_t<std::remove_pointer_t<REQ>>>::value) {
+      fill_desc(&queue_->desc[descs_[desc_index_]], req, flag, 0);
+    } else {
+      fill_desc(&queue_->desc[descs_[desc_index_]], req->first, req->second, flag, 0);
+    }
   }
 
   Device* device_;
